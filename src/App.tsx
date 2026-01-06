@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { useEditorStore } from './stores/editor';
 import { Editor } from './components/Editor';
-import { Preview } from './components/Preview';
+import { Preview, VirtualPreview } from './components/Preview';
 import { Toolbar } from './components/Toolbar';
 import { Outline } from './components/Outline';
 import { openFile, saveFile, saveFileAs, getFileName } from './lib/file';
@@ -191,11 +191,20 @@ function App() {
         
         {showPreview && (
           <div className="preview-panel" ref={previewRef}>
-            <Preview
-              content={content}
-              theme={theme}
-              fontSize={fontSize}
-            />
+            {/* 大文档 (>50KB) 使用虚拟滚动 */}
+            {content.length > 50000 ? (
+              <VirtualPreview
+                content={content}
+                theme={theme}
+                fontSize={fontSize}
+              />
+            ) : (
+              <Preview
+                content={content}
+                theme={theme}
+                fontSize={fontSize}
+              />
+            )}
           </div>
         )}
       </div>
