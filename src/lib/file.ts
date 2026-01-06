@@ -14,22 +14,32 @@ export function isTauri(): boolean {
 export async function openFile(): Promise<{ content: string; path: string } | null> {
   if (isTauri()) {
     // Tauri 环境
-    const { open } = await import('@tauri-apps/plugin-dialog');
-    const { readTextFile } = await import('@tauri-apps/plugin-fs');
-    
-    const filePath = await open({
-      multiple: false,
-      filters: [{
-        name: 'Markdown',
-        extensions: ['md', 'markdown', 'txt']
-      }]
-    });
-    
-    if (filePath && typeof filePath === 'string') {
-      const content = await readTextFile(filePath);
-      return { content, path: filePath };
+    try {
+      console.log('[file.ts] Opening file dialog in Tauri...');
+      const { open } = await import('@tauri-apps/plugin-dialog');
+      const { readTextFile } = await import('@tauri-apps/plugin-fs');
+      
+      const filePath = await open({
+        multiple: false,
+        filters: [{
+          name: 'Markdown',
+          extensions: ['md', 'markdown', 'txt']
+        }]
+      });
+      
+      console.log('[file.ts] Selected file:', filePath);
+      
+      if (filePath && typeof filePath === 'string') {
+        const content = await readTextFile(filePath);
+        console.log('[file.ts] File read successfully, length:', content.length);
+        return { content, path: filePath };
+      }
+      return null;
+    } catch (error) {
+      console.error('[file.ts] Error opening file:', error);
+      alert('打开文件失败: ' + (error as Error).message);
+      return null;
     }
-    return null;
   } else {
     // Web 环境 - 使用 File API
     return new Promise((resolve) => {
@@ -60,27 +70,37 @@ export async function saveFile(
   currentPath?: string
 ): Promise<string | null> {
   if (isTauri()) {
-    const { save } = await import('@tauri-apps/plugin-dialog');
-    const { writeTextFile } = await import('@tauri-apps/plugin-fs');
-    
-    // 如果有当前路径，直接保存；否则弹出保存对话框
-    let filePath = currentPath;
-    
-    if (!filePath) {
-      filePath = await save({
-        filters: [{
-          name: 'Markdown',
-          extensions: ['md']
-        }],
-        defaultPath: 'untitled.md'
-      }) ?? undefined;
+    try {
+      console.log('[file.ts] Saving file, currentPath:', currentPath);
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const { writeTextFile } = await import('@tauri-apps/plugin-fs');
+      
+      // 如果有当前路径，直接保存；否则弹出保存对话框
+      let filePath = currentPath;
+      
+      if (!filePath) {
+        filePath = await save({
+          filters: [{
+            name: 'Markdown',
+            extensions: ['md']
+          }],
+          defaultPath: 'untitled.md'
+        }) ?? undefined;
+      }
+      
+      console.log('[file.ts] Saving to:', filePath);
+      
+      if (filePath) {
+        await writeTextFile(filePath, content);
+        console.log('[file.ts] File saved successfully');
+        return filePath;
+      }
+      return null;
+    } catch (error) {
+      console.error('[file.ts] Error saving file:', error);
+      alert('保存文件失败: ' + (error as Error).message);
+      return null;
     }
-    
-    if (filePath) {
-      await writeTextFile(filePath, content);
-      return filePath;
-    }
-    return null;
   } else {
     // Web 环境 - 下载文件
     const blob = new Blob([content], { type: 'text/markdown' });
@@ -99,22 +119,32 @@ export async function saveFile(
  */
 export async function saveFileAs(content: string): Promise<string | null> {
   if (isTauri()) {
-    const { save } = await import('@tauri-apps/plugin-dialog');
-    const { writeTextFile } = await import('@tauri-apps/plugin-fs');
-    
-    const filePath = await save({
-      filters: [{
-        name: 'Markdown',
-        extensions: ['md']
-      }],
-      defaultPath: 'untitled.md'
-    });
-    
-    if (filePath) {
-      await writeTextFile(filePath, content);
-      return filePath;
+    try {
+      console.log('[file.ts] Save As dialog...');
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const { writeTextFile } = await import('@tauri-apps/plugin-fs');
+      
+      const filePath = await save({
+        filters: [{
+          name: 'Markdown',
+          extensions: ['md']
+        }],
+        defaultPath: 'untitled.md'
+      });
+      
+      console.log('[file.ts] Save As path:', filePath);
+      
+      if (filePath) {
+        await writeTextFile(filePath, content);
+        console.log('[file.ts] Save As completed successfully');
+        return filePath;
+      }
+      return null;
+    } catch (error) {
+      console.error('[file.ts] Error in Save As:', error);
+      alert('另存为失败: ' + (error as Error).message);
+      return null;
     }
-    return null;
   } else {
     return saveFile(content);
   }

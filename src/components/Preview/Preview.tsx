@@ -3,7 +3,6 @@ import { parseMarkdown } from '../../lib/markdown';
 import { renderMathInElement } from '../../lib/math';
 import { renderMermaidInElement } from '../../lib/mermaid';
 import { THEMES } from '../../themes';
-import { getRenderDelay, isLargeDocument } from '../../lib/performance';
 import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/github.css';
 import './Preview.css';
@@ -14,32 +13,45 @@ interface PreviewProps {
   fontSize?: number;
 }
 
+// 根据内容长度计算防抖延迟
+function getDebounceDelay(contentLength: number): number {
+  if (contentLength < 1000) return 150;      // 小文档
+  if (contentLength < 5000) return 250;      // 中等文档
+  if (contentLength < 20000) return 400;     // 较大文档
+  return 600;                                 // 大文档
+}
+
 export function Preview({ content, theme, fontSize = 16 }: PreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedContent, setDebouncedContent] = useState(content);
+  const lastContentRef = useRef(content);
   
-  // 大文档防抖
+  // 所有文档都使用防抖，根据大小调整延迟
   useEffect(() => {
-    const delay = getRenderDelay(content);
-    
-    if (isLargeDocument(content)) {
-      renderTimerRef.current = setTimeout(() => {
-        setDebouncedContent(content);
-      }, delay);
-      
-      return () => {
-        if (renderTimerRef.current) {
-          clearTimeout(renderTimerRef.current);
-        }
-      };
-    } else {
-      setDebouncedContent(content);
+    // 清除之前的定时器
+    if (renderTimerRef.current) {
+      clearTimeout(renderTimerRef.current);
     }
+    
+    const delay = getDebounceDelay(content.length);
+    
+    renderTimerRef.current = setTimeout(() => {
+      setDebouncedContent(content);
+      lastContentRef.current = content;
+    }, delay);
+    
+    return () => {
+      if (renderTimerRef.current) {
+        clearTimeout(renderTimerRef.current);
+      }
+    };
   }, [content]);
   
-  // 解析 Markdown
-  const html = useMemo(() => parseMarkdown(debouncedContent), [debouncedContent]);
+  // 解析 Markdown - 使用 useMemo 缓存
+  const html = useMemo(() => {
+    return parseMarkdown(debouncedContent);
+  }, [debouncedContent]);
   
   // 获取主题类名
   const themeClass = useMemo(() => {
@@ -47,14 +59,14 @@ export function Preview({ content, theme, fontSize = 16 }: PreviewProps) {
     return themeConfig?.className || 'theme-github';
   }, [theme]);
 
-  // 渲染特殊元素
+  // 渲染特殊元素 (KaTeX, Mermaid)
   const renderSpecialElements = useCallback(async () => {
     if (!containerRef.current) return;
 
-    // 渲染数学公式（同步）
+    // 渲染数学公式
     renderMathInElement(containerRef.current);
 
-    // 渲染 Mermaid 图表（异步）
+    // 渲染 Mermaid 图表
     try {
       await renderMermaidInElement(containerRef.current);
     } catch (e) {
