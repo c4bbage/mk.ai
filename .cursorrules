@@ -1,0 +1,47 @@
+# MD.AI - Markdown 编辑器项目
+
+## Scratchpad
+
+### 当前任务：Markdown 编辑器技术方案分析
+
+#### 需求分析
+1. 类似 Typora 的 Markdown 查看/编辑软件
+2. 支持多平台（macOS/Windows/Linux/Web）
+3. 支持微信公众号排版主题（md2wechat、mmdeditor、wechat.jeffjade）
+4. 支持字体定义和自定义主题
+5. **图片处理**：粘贴/拖拽上传、本地存储/云端存储
+6. **数学公式**：LaTeX 公式渲染（KaTeX/MathJax）
+7. **Mermaid 图**：流程图、时序图、甘特图等
+8. **图片存放策略**：Base64内嵌/本地目录/图床上传
+
+#### 方案对比
+
+| 方案 | 开发时间 | 跨平台 | 主题定制 | 复杂度 |
+|------|---------|--------|---------|--------|
+| VSCode 扩展 | 1-2周 | ✅ | ⚠️ 有限 | 低 |
+| Web 应用 | 1-2周 | ✅ 浏览器 | ✅ 完全 | 低 |
+| Electron 桌面 | 2-3周 | ✅ | ✅ 完全 | 中 |
+| Tauri 桌面 | 2-3周 | ✅ | ✅ 完全 | 中 |
+
+#### 推荐方案：Web + Tauri 混合方案
+
+#### 进度跟踪
+[X] 方案分析完成
+[X] 技术方案文档 (docs/技术方案.md)
+[X] 核心功能实现
+  [X] 搭建项目框架
+  [X] 集成 CodeMirror 编辑器
+  [X] Markdown 实时预览
+  [X] KaTeX 公式支持
+  [X] Mermaid 图表支持
+  [X] 图片粘贴功能
+[X] 主题系统实现 (GitHub, 微信优雅橙, 清新绿, 科技蓝)
+[X] 字体定义系统
+[X] 桌面封装 (Tauri) - macOS 版本已完成
+
+## Lessons
+
+- 使用 marked.js 或 markdown-it 解析 Markdown
+- 微信公众号排版主题可以从 doocs/md 项目借鉴
+- 字体定义使用 CSS Variables 最灵活
+- Tauri 比 Electron 体积更小，性能更好

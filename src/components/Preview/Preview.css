@@ -1,0 +1,102 @@
+/* ===== 液态玻璃预览区 ===== */
+.preview-container {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+  background: transparent;
+  border-radius: 20px;
+}
+
+.preview-container .markdown-body {
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 24px;
+}
+
+/* 滚动条样式 */
+.preview-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.preview-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.preview-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.preview-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+  background-clip: content-box;
+}
+
+/* Mermaid 图表加载状态 */
+.preview-container .mermaid-block:not(.mermaid-rendered) {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(26, 26, 46, 0.5);
+  font-size: 14px;
+  
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 12px;
+  border: 1px dashed rgba(102, 126, 234, 0.2);
+}
+
+.preview-container .mermaid-block:not(.mermaid-rendered)::after {
+  content: '📊 图表加载中...';
+}
+
+/* 数学公式加载状态 */
+.preview-container .math-block:not(.math-rendered),
+.preview-container .math-inline:not(.math-rendered) {
+  color: rgba(26, 26, 46, 0.5);
+  font-style: italic;
+  background: rgba(102, 126, 234, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* 图片悬停效果 */
+.preview-container .md-image {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px;
+}
+
+.preview-container .md-image:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* 暗色模式 */
+@media (prefers-color-scheme: dark) {
+  .preview-container .markdown-body {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .preview-container .mermaid-block:not(.mermaid-rendered) {
+    background: rgba(102, 126, 234, 0.1);
+    border-color: rgba(102, 126, 234, 0.3);
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .preview-container .math-block:not(.math-rendered),
+  .preview-container .math-inline:not(.math-rendered) {
+    background: rgba(102, 126, 234, 0.15);
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .preview-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .preview-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+}

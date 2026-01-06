@@ -1,0 +1,222 @@
+/* ===== 液态玻璃主题选择器 ===== */
+.theme-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  
+  /* 液态玻璃效果 */
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 18px;
+  
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+  
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-selector:hover {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.theme-selector:focus {
+  box-shadow: 
+    0 0 0 3px rgba(102, 126, 234, 0.3),
+    0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* 箭头按钮 - 液态玻璃 */
+.theme-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  
+  color: rgba(26, 26, 46, 0.7);
+  font-size: 18px;
+  font-weight: 300;
+  cursor: pointer;
+  
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.theme-arrow:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.7);
+  transform: scale(1.1);
+  color: rgba(26, 26, 46, 0.9);
+}
+
+.theme-arrow:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.theme-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* 主题列表 */
+.theme-list {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 2px;
+}
+
+.theme-list::-webkit-scrollbar {
+  display: none;
+}
+
+/* 主题按钮 - 液态玻璃胶囊 */
+.theme-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 14px;
+  
+  color: rgba(26, 26, 46, 0.7);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  flex-shrink: 0;
+  
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.theme-btn:hover {
+  background: rgba(255, 255, 255, 0.5);
+  color: rgba(26, 26, 46, 0.9);
+  transform: translateY(-1px);
+}
+
+.theme-btn.active {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--theme-color);
+  border-color: var(--theme-color);
+  font-weight: 600;
+  
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    0 0 0 1px var(--theme-color);
+}
+
+/* 主题颜色点 */
+.theme-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--theme-color);
+  flex-shrink: 0;
+  
+  transition: all 0.3s;
+  box-shadow: 
+    inset 0 -1px 2px rgba(0, 0, 0, 0.2),
+    inset 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+.theme-btn:hover .theme-dot {
+  transform: scale(1.15);
+}
+
+.theme-btn.active .theme-dot {
+  box-shadow: 
+    inset 0 -1px 2px rgba(0, 0, 0, 0.15),
+    0 0 8px var(--theme-color);
+}
+
+/* 进度指示器 */
+.theme-indicator {
+  display: none;
+  gap: 6px;
+  padding: 0 6px;
+}
+
+.indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(26, 26, 46, 0.2);
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.indicator-dot:hover {
+  background: rgba(26, 26, 46, 0.4);
+  transform: scale(1.2);
+}
+
+.indicator-dot.active {
+  background: var(--dot-color, #667eea);
+  transform: scale(1.3);
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 900px) {
+  .theme-name {
+    display: none;
+  }
+
+  .theme-btn {
+    padding: 8px;
+    border-radius: 50%;
+  }
+}
+
+@media (max-width: 600px) {
+  .theme-selector {
+    padding: 4px;
+    border-radius: 14px;
+  }
+
+  .theme-arrow {
+    width: 24px;
+    height: 24px;
+    font-size: 16px;
+  }
+
+  .theme-btn {
+    padding: 6px;
+  }
+
+  .theme-dot {
+    width: 12px;
+    height: 12px;
+  }
+
+  .theme-indicator {
+    display: flex;
+  }
+}

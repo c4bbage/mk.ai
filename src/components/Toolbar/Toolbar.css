@@ -1,0 +1,264 @@
+/* ===== iOS 26 液态玻璃工具栏 ===== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  padding: 0 20px;
+  flex-shrink: 0;
+  
+  /* 液态玻璃背景 */
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.25) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.15) 100%
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  
+  /* 玻璃边框和光泽 */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 4px 30px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+  
+  color: #1a1a2e;
+  user-select: none;
+  position: relative;
+  z-index: 100;
+}
+
+/* 顶部高光条 */
+.toolbar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    transparent
+  );
+}
+
+.toolbar-left,
+.toolbar-center,
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toolbar-left {
+  flex-shrink: 0;
+}
+
+.toolbar-center {
+  flex-shrink: 0;
+}
+
+.toolbar-right {
+  flex: 1;
+  justify-content: flex-end;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.toolbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 18px;
+  color: #1a1a2e;
+}
+
+.brand-icon {
+  font-size: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.brand-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 28px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(0, 0, 0, 0.15),
+    transparent
+  );
+  margin: 0 12px;
+}
+
+.toolbar-label {
+  font-size: 13px;
+  color: rgba(26, 26, 46, 0.7);
+  font-weight: 500;
+}
+
+/* 液态玻璃按钮 */
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  
+  /* 玻璃效果 */
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  
+  color: rgba(26, 26, 46, 0.8);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.toolbar-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.toolbar-btn.active {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.8), rgba(118, 75, 162, 0.8));
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 4px 15px rgba(102, 126, 234, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.toolbar-btn .btn-icon {
+  font-size: 15px;
+}
+
+/* 字体大小控制 - 液态玻璃风格 */
+.font-size-control {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  padding: 4px;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.font-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: rgba(26, 26, 46, 0.8);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.font-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.font-btn:active:not(:disabled) {
+  transform: scale(0.9);
+  background: rgba(102, 126, 234, 0.2);
+}
+
+.font-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.font-size-value {
+  min-width: 36px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 900px) {
+  .toolbar {
+    padding: 0 16px;
+  }
+
+  .toolbar-label {
+    display: none;
+  }
+
+  .btn-text {
+    display: none;
+  }
+
+  .toolbar-btn {
+    padding: 8px 10px;
+  }
+
+  .toolbar-divider {
+    margin: 0 8px;
+  }
+}
+
+@media (max-width: 600px) {
+  .toolbar {
+    height: 54px;
+    padding: 0 12px;
+  }
+
+  .toolbar-brand .brand-text {
+    display: none;
+  }
+
+  .toolbar-divider {
+    display: none;
+  }
+
+  .toolbar-center {
+    gap: 8px;
+  }
+}

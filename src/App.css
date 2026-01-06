@@ -1,0 +1,174 @@
+/* ===== 全局样式重置 ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "PingFang SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== App 布局 ===== */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  
+  /* iOS 风格渐变背景 */
+  background: linear-gradient(
+    180deg,
+    #e8ecf4 0%,
+    #d4dbe8 50%,
+    #c8d0e0 100%
+  );
+}
+
+.app-content {
+  flex: 1;
+  display: flex;
+  flex-direction: row; /* 确保横向排列 */
+  overflow: hidden;
+  padding: 16px;
+  gap: 16px;
+}
+
+/* ===== 编辑器面板 - 液态玻璃卡片 ===== */
+.editor-panel {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  
+  /* 液态玻璃效果 */
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
+  
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  
+  overflow: hidden;
+}
+
+/* ===== 预览面板 - 液态玻璃卡片 ===== */
+.preview-panel {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  
+  /* 液态玻璃效果 */
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  
+  overflow: hidden;
+}
+
+/* ===== 分隔线 - 透明 ===== */
+.panel-divider {
+  width: 0;
+  cursor: col-resize;
+}
+
+/* ===== 单面板模式 ===== */
+.editor-panel:only-child,
+.preview-panel:only-child {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ===== 滚动条 - iOS 风格 ===== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+  background-clip: content-box;
+}
+
+/* ===== 选中文本样式 ===== */
+::selection {
+  background: rgba(102, 126, 234, 0.3);
+}
+
+/* ===== 响应式布局 - 仅在非常小的屏幕才变为纵向 ===== */
+@media (max-width: 600px) {
+  .app-content {
+    flex-direction: column;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .editor-panel,
+  .preview-panel {
+    border-radius: 16px;
+    min-height: 200px;
+  }
+
+  .panel-divider {
+    width: 100%;
+    height: 0;
+    cursor: row-resize;
+  }
+}
+
+/* ===== 暗色模式适配 ===== */
+@media (prefers-color-scheme: dark) {
+  .app {
+    background: linear-gradient(
+      180deg,
+      #1c1c2e 0%,
+      #2d2d44 50%,
+      #1c1c2e 100%
+    );
+  }
+
+  .editor-panel {
+    background: rgba(45, 45, 68, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .preview-panel {
+    background: rgba(45, 45, 68, 0.9);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}

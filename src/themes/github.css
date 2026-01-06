@@ -1,0 +1,42 @@
+/* ===== GitHub 主题 ===== */
+.theme-github {
+  --color-text: #24292e;
+  --color-text-secondary: #586069;
+  --color-text-muted: #6a737d;
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f6f8fa;
+  --color-bg-code: #f6f8fa;
+  --color-bg-pre: #f6f8fa;
+  --color-border: #e1e4e8;
+  --color-link: #0366d6;
+  --color-accent: #0366d6;
+}
+
+.theme-github .markdown-body {
+  background: var(--color-bg);
+}
+
+.theme-github h1 {
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.theme-github h2 {
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.theme-github blockquote {
+  border-left-color: #dfe2e5;
+  color: var(--color-text-muted);
+}
+
+.theme-github code {
+  background: rgba(27, 31, 35, 0.05);
+  color: #24292e;
+}
+
+.theme-github pre {
+  background: #f6f8fa;
+  border: 1px solid var(--color-border);
+}

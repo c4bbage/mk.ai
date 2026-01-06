@@ -1,0 +1,131 @@
+/* ===== 微信公众号 - 科技蓝主题 ===== */
+.theme-wechat-blue {
+  --color-text: #2c3e50;
+  --color-text-secondary: #34495e;
+  --color-text-muted: #7f8c8d;
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f5f7fa;
+  --color-bg-code: #ecf5ff;
+  --color-bg-pre: #263238;
+  --color-border: #dcdfe6;
+  --color-link: #409eff;
+  --color-accent: #409eff;
+}
+
+.theme-wechat-blue .markdown-body {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 20px 15px;
+  background: var(--color-bg);
+}
+
+.theme-wechat-blue h1 {
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.8em;
+  color: var(--color-text);
+  background: linear-gradient(135deg, var(--color-accent) 0%, #67c23a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  padding-bottom: 12px;
+  margin-bottom: 24px;
+}
+
+.theme-wechat-blue h2 {
+  font-weight: 600;
+  font-size: 1.3em;
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-accent) 0%, #79bbff 100%);
+  padding: 8px 16px;
+  border-radius: 6px;
+  margin: 24px 0 12px;
+  display: inline-block;
+}
+
+.theme-wechat-blue h3 {
+  font-weight: 600;
+  font-size: 1.1em;
+  color: var(--color-accent);
+  border-bottom: 2px solid var(--color-accent);
+  padding-bottom: 6px;
+  margin: 20px 0 10px;
+  display: inline-block;
+}
+
+.theme-wechat-blue blockquote {
+  border-left: 4px solid var(--color-accent);
+  background: var(--color-bg-secondary);
+  padding: 12px 16px;
+  margin: 16px 0;
+  border-radius: 0 6px 6px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.theme-wechat-blue code {
+  background: var(--color-bg-code);
+  color: var(--color-accent);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  border: 1px solid #d9ecff;
+}
+
+.theme-wechat-blue pre {
+  background: var(--color-bg-pre);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.theme-wechat-blue pre code {
+  color: #eeffff;
+  background: transparent;
+  border: none;
+}
+
+.theme-wechat-blue a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: all 0.3s;
+}
+
+.theme-wechat-blue a:hover {
+  color: #79bbff;
+}
+
+.theme-wechat-blue strong {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.theme-wechat-blue table {
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.theme-wechat-blue table th {
+  background: linear-gradient(135deg, var(--color-accent) 0%, #79bbff 100%);
+  color: #fff;
+  font-weight: 600;
+}
+
+.theme-wechat-blue table tr:nth-child(even) {
+  background: var(--color-bg-secondary);
+}
+
+.theme-wechat-blue hr {
+  background: linear-gradient(to right, transparent, var(--color-accent), transparent);
+  height: 2px;
+}
+
+.theme-wechat-blue ul li::marker,
+.theme-wechat-blue ol li::marker {
+  color: var(--color-accent);
+}
+
+/* 给图片添加阴影效果 */
+.theme-wechat-blue .md-image {
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
+}

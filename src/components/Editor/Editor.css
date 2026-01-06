@@ -1,0 +1,158 @@
+/* ===== 液态玻璃编辑器 ===== */
+.editor-container {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: transparent;
+  border-radius: 20px;
+}
+
+.editor-container .cm-editor {
+  height: 100%;
+  background: transparent;
+}
+
+.editor-container .cm-focused {
+  outline: none;
+}
+
+/* 编辑器内容区域 */
+.editor-container .cm-scroller {
+  background: rgba(255, 255, 255, 0.5);
+  font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+}
+
+/* 选中文本样式 */
+.editor-container .cm-selectionBackground {
+  background: rgba(102, 126, 234, 0.2) !important;
+}
+
+.editor-container .cm-focused .cm-selectionBackground {
+  background: rgba(102, 126, 234, 0.3) !important;
+}
+
+/* 光标样式 */
+.editor-container .cm-cursor {
+  border-left-color: #667eea;
+  border-left-width: 2px;
+}
+
+/* 行号样式 */
+.editor-container .cm-gutters {
+  background: rgba(255, 255, 255, 0.3);
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.editor-container .cm-lineNumbers .cm-gutterElement {
+  color: rgba(26, 26, 46, 0.4);
+  font-size: 12px;
+  padding: 0 16px 0 12px;
+  min-width: 48px;
+  font-weight: 500;
+}
+
+/* 当前行高亮 */
+.editor-container .cm-activeLine {
+  background: rgba(102, 126, 234, 0.06);
+}
+
+.editor-container .cm-activeLineGutter {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+/* 滚动条样式 */
+.editor-container .cm-scroller::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.editor-container .cm-scroller::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.editor-container .cm-scroller::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.editor-container .cm-scroller::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+  background-clip: content-box;
+}
+
+/* Markdown 语法高亮增强 */
+.editor-container .cm-header {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.editor-container .cm-strong {
+  color: #1a1a2e;
+  font-weight: 700;
+}
+
+.editor-container .cm-emphasis {
+  color: #764ba2;
+  font-style: italic;
+}
+
+.editor-container .cm-link {
+  color: #0366d6;
+  text-decoration: underline;
+}
+
+.editor-container .cm-url {
+  color: #6a737d;
+}
+
+.editor-container .cm-comment {
+  color: #6a737d;
+}
+
+/* 暗色模式 */
+@media (prefers-color-scheme: dark) {
+  .editor-container .cm-scroller {
+    background: rgba(30, 30, 46, 0.5);
+  }
+
+  .editor-container .cm-gutters {
+    background: rgba(30, 30, 46, 0.4);
+    border-right-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .editor-container .cm-lineNumbers .cm-gutterElement {
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  .editor-container .cm-activeLine {
+    background: rgba(102, 126, 234, 0.1);
+  }
+
+  .editor-container .cm-activeLineGutter {
+    background: rgba(102, 126, 234, 0.15);
+  }
+
+  .editor-container .cm-cursor {
+    border-left-color: #a5b4fc;
+  }
+
+  .editor-container .cm-content {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .editor-container .cm-header {
+    color: #a5b4fc;
+  }
+
+  .editor-container .cm-strong {
+    color: #fff;
+  }
+
+  .editor-container .cm-emphasis {
+    color: #c4b5fd;
+  }
+}

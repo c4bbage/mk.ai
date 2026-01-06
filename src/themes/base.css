@@ -1,0 +1,198 @@
+/* ===== 基础变量定义 ===== */
+:root {
+  /* 字体族 */
+  --font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Source Han Serif SC", "Noto Serif SC", "Songti SC", Georgia, serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  
+  /* 字号 */
+  --font-size-base: 16px;
+  --font-size-sm: 14px;
+  --font-size-lg: 18px;
+  --font-size-h1: 2em;
+  --font-size-h2: 1.5em;
+  --font-size-h3: 1.25em;
+  --font-size-h4: 1em;
+  --font-size-code: 0.9em;
+  
+  /* 行高 */
+  --line-height: 1.8;
+  --line-height-heading: 1.4;
+  --line-height-code: 1.5;
+  
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* 圆角 */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+/* ===== Markdown 内容通用样式 ===== */
+.markdown-body {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height);
+  color: var(--color-text);
+  word-wrap: break-word;
+  padding: var(--spacing-lg);
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  font-weight: 600;
+  line-height: var(--line-height-heading);
+}
+
+.markdown-body h1 { font-size: var(--font-size-h1); }
+.markdown-body h2 { font-size: var(--font-size-h2); }
+.markdown-body h3 { font-size: var(--font-size-h3); }
+.markdown-body h4 { font-size: var(--font-size-h4); }
+
+.markdown-body p {
+  margin-bottom: var(--spacing-md);
+}
+
+.markdown-body a {
+  color: var(--color-link);
+  text-decoration: none;
+}
+
+.markdown-body a:hover {
+  text-decoration: underline;
+}
+
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+
+.markdown-body blockquote {
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-left: 4px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+}
+
+.markdown-body blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 2em;
+  margin-bottom: var(--spacing-md);
+}
+
+.markdown-body li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.markdown-body code {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-code);
+  padding: 2px 6px;
+  background: var(--color-bg-code);
+  border-radius: var(--radius-sm);
+}
+
+.markdown-body pre {
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-md);
+  background: var(--color-bg-pre);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+
+.markdown-body pre code {
+  padding: 0;
+  background: transparent;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-code);
+}
+
+.markdown-body table {
+  width: 100%;
+  margin: var(--spacing-md) 0;
+  border-collapse: collapse;
+}
+
+.markdown-body th,
+.markdown-body td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.markdown-body th {
+  background: var(--color-bg-secondary);
+  font-weight: 600;
+}
+
+.markdown-body hr {
+  height: 1px;
+  margin: var(--spacing-lg) 0;
+  background: var(--color-border);
+  border: none;
+}
+
+/* ===== 数学公式样式 ===== */
+.markdown-body .math-block {
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-md);
+  overflow-x: auto;
+  text-align: center;
+}
+
+.markdown-body .math-inline {
+  margin: 0 2px;
+}
+
+.markdown-body .math-error {
+  color: #e53935;
+  background: #ffebee;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+/* ===== Mermaid 图表样式 ===== */
+.markdown-body .mermaid-block {
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  text-align: center;
+}
+
+.markdown-body .mermaid-block svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown-body .mermaid-error {
+  color: #e53935;
+  padding: var(--spacing-md);
+}
+
+/* ===== 图片样式 ===== */
+.markdown-body .md-image {
+  display: block;
+  margin: var(--spacing-md) auto;
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}

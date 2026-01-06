@@ -1,0 +1,132 @@
+/* ===== 微信公众号 - 清新绿主题 ===== */
+.theme-wechat-green {
+  --color-text: #333;
+  --color-text-secondary: #555;
+  --color-text-muted: #888;
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f8fdf8;
+  --color-bg-code: #f0f9f0;
+  --color-bg-pre: #1e1e1e;
+  --color-border: #e0e0e0;
+  --color-link: #07c160;
+  --color-accent: #07c160;
+}
+
+.theme-wechat-green .markdown-body {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 20px 15px;
+  background: var(--color-bg);
+}
+
+.theme-wechat-green h1 {
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.8em;
+  color: var(--color-accent);
+  position: relative;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.theme-wechat-green h1::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 2px;
+}
+
+.theme-wechat-green h2 {
+  font-weight: bold;
+  font-size: 1.3em;
+  color: var(--color-accent);
+  border-left: 4px solid var(--color-accent);
+  padding-left: 12px;
+  margin: 24px 0 12px;
+  background: linear-gradient(to right, var(--color-bg-secondary), transparent);
+  padding: 8px 12px;
+}
+
+.theme-wechat-green h3 {
+  font-weight: bold;
+  font-size: 1.1em;
+  color: var(--color-text);
+  margin: 20px 0 10px;
+}
+
+.theme-wechat-green h3::before {
+  content: '▍';
+  color: var(--color-accent);
+  margin-right: 6px;
+}
+
+.theme-wechat-green blockquote {
+  border-left: 4px solid var(--color-accent);
+  background: var(--color-bg-secondary);
+  padding: 12px 16px;
+  margin: 16px 0;
+  border-radius: 0 6px 6px 0;
+}
+
+.theme-wechat-green code {
+  background: var(--color-bg-code);
+  color: #2e7d32;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.theme-wechat-green pre {
+  background: var(--color-bg-pre);
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #333;
+}
+
+.theme-wechat-green pre code {
+  color: #d4d4d4;
+  background: transparent;
+}
+
+.theme-wechat-green a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.theme-wechat-green a:hover {
+  text-decoration: underline;
+}
+
+.theme-wechat-green strong {
+  color: var(--color-accent);
+}
+
+.theme-wechat-green table th {
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.theme-wechat-green table tr:nth-child(even) {
+  background: var(--color-bg-secondary);
+}
+
+.theme-wechat-green hr {
+  background: var(--color-accent);
+  height: 2px;
+  border-radius: 1px;
+}
+
+.theme-wechat-green ul li::marker {
+  color: var(--color-accent);
+}
+
+.theme-wechat-green ol li::marker {
+  color: var(--color-accent);
+  font-weight: bold;
+}
