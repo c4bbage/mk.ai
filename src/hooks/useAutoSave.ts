@@ -31,7 +31,7 @@ export function useAutoSave({
   isModified,
   onSave,
 }: AutoSaveOptions) {
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedContent = useRef<string>(content);
 
   // 防抖保存

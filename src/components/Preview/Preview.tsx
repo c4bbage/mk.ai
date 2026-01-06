@@ -16,7 +16,7 @@ interface PreviewProps {
 
 export function Preview({ content, theme, fontSize = 16 }: PreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const renderTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedContent, setDebouncedContent] = useState(content);
   
   // 大文档防抖

@@ -165,7 +165,7 @@ export function VirtualPreview({ content, theme, fontSize = 16 }: VirtualPreview
       )}
       
       {/* 性能指标 (开发模式) */}
-      {parseTime > 0 && process.env.NODE_ENV === 'development' && (
+      {parseTime > 0 && import.meta.env.DEV && (
         <div className="perf-stats">
           解析: {parseTime.toFixed(1)}ms | 块: {totalBlocks}
         </div>

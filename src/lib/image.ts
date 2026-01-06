@@ -92,7 +92,7 @@ export function getImagesDir(filePath: string): string {
 /**
  * 获取相对路径
  */
-export function getRelativePath(fromDir: string, toPath: string): string {
+export function getRelativePath(_fromDir: string, toPath: string): string {
   // 简化处理：假设在同一目录下
   const fileName = toPath.split(/[/\\]/).pop() || toPath;
   const assetsDir = toPath.split(/[/\\]/).slice(-2, -1)[0] || '';
