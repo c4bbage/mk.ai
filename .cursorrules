@@ -34,10 +34,22 @@
   [X] Markdown 实时预览
   [X] KaTeX 公式支持
   [X] Mermaid 图表支持
-  [X] 图片粘贴功能
+  [X] 图片粘贴功能 (Base64)
 [X] 主题系统实现 (GitHub, 微信优雅橙, 清新绿, 科技蓝)
 [X] 字体定义系统
 [X] 桌面封装 (Tauri) - macOS 版本已完成
+[X] 大纲导航组件 (Outline)
+[X] 性能优化 (大文档防抖)
+
+#### 待完成功能
+[X] 文件保存/打开 (⌘O/⌘S/⇧⌘S)
+[X] 图片本地存储 (Typora 风格 ./文档名.assets/)
+[X] 导出功能 (HTML/PNG/PDF)
+[X] 实时保存机制 (防抖 + 失焦保存 + 本地备份)
+[ ] 图床上传 (GitHub/SM.MS)
+[ ] 微信公众号复制
+[ ] 拖拽分割线调整面板大小
+[ ] 拖拽分割线调整面板大小
 
 ## Lessons
 
@@ -45,3 +57,6 @@
 - 微信公众号排版主题可以从 doocs/md 项目借鉴
 - 字体定义使用 CSS Variables 最灵活
 - Tauri 比 Electron 体积更小，性能更好
+- 大文档需要防抖优化，根据文档大小动态调整延迟
+- 自动保存需要三重保障：防抖保存 + 失焦保存 + localStorage 备份
+- Mermaid 渲染需要 requestAnimationFrame 确保 DOM 更新

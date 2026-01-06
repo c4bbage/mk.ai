@@ -42,6 +42,26 @@ body {
   gap: 16px;
 }
 
+/* ===== 大纲面板 ===== */
+.outline-panel {
+  width: 200px;
+  flex-shrink: 0;
+  
+  /* 液态玻璃效果 */
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  
+  overflow: hidden;
+}
+
 /* ===== 编辑器面板 - 液态玻璃卡片 ===== */
 .editor-panel {
   flex: 1;
