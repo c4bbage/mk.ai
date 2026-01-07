@@ -9,10 +9,12 @@
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
+  "plugins": {},
   "app": {
     "withGlobalTauri": true,
     "windows": [
       {
+        "label": "main",
         "title": "MD.AI - Markdown Editor",
         "width": 1400,
         "height": 900,

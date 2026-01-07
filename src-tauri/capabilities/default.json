@@ -22,10 +22,22 @@
     {
       "identifier": "fs:scope",
       "allow": [
+        "**",
         "$HOME/**",
         "$DOCUMENT/**",
         "$DESKTOP/**",
-        "$DOWNLOAD/**"
+        "$DOWNLOAD/**",
+        "$APP/**",
+        "$APPDATA/**",
+        "$APPCONFIG/**",
+        "$APPLOCALDATA/**",
+        "$APPCACHE/**",
+        "$APPLOG/**",
+        "$TEMP/**",
+        "$RESOURCE/**",
+        "/Users/**",
+        "/Volumes/**",
+        "/tmp/**"
       ]
     },
     

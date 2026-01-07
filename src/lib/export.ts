@@ -5,6 +5,8 @@
 
 import { parseMarkdown } from './markdown';
 import { isTauri } from './file';
+import { save } from '@tauri-apps/plugin-dialog';
+import { writeTextFile, writeFile } from '@tauri-apps/plugin-fs';
 
 /**
  * 生成完整的 HTML 文档（包含样式和图片）
@@ -53,9 +55,6 @@ export async function exportHTML(
   const fullHTML = generateFullHTML(content, theme, fileName.replace('.html', ''));
   
   if (isTauri()) {
-    const { save } = await import('@tauri-apps/plugin-dialog');
-    const { writeTextFile } = await import('@tauri-apps/plugin-fs');
-    
     const filePath = await save({
       filters: [{ name: 'HTML', extensions: ['html'] }],
       defaultPath: fileName
@@ -100,9 +99,6 @@ export async function exportImage(
     const dataUrl = canvas.toDataURL('image/png');
     
     if (isTauri()) {
-      const { save } = await import('@tauri-apps/plugin-dialog');
-      const { writeFile } = await import('@tauri-apps/plugin-fs');
-      
       const filePath = await save({
         filters: [{ name: 'PNG Image', extensions: ['png'] }],
         defaultPath: fileName

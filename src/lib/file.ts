@@ -3,9 +3,16 @@
  * 支持 Tauri 桌面环境和 Web 浏览器环境
  */
 
+import * as dialog from '@tauri-apps/plugin-dialog';
+import * as fs from '@tauri-apps/plugin-fs';
+
 // 检测是否在 Tauri 环境中
 export function isTauri(): boolean {
-  return typeof window !== 'undefined' && '__TAURI__' in window;
+  const hasTauri = typeof window !== 'undefined' && '__TAURI__' in window;
+  console.log('[file.ts] isTauri check:', hasTauri);
+  console.log('[file.ts] dialog module:', dialog);
+  console.log('[file.ts] fs module:', fs);
+  return hasTauri;
 }
 
 /**
@@ -16,10 +23,9 @@ export async function openFile(): Promise<{ content: string; path: string } | nu
     // Tauri 环境
     try {
       console.log('[file.ts] Opening file dialog in Tauri...');
-      const { open } = await import('@tauri-apps/plugin-dialog');
-      const { readTextFile } = await import('@tauri-apps/plugin-fs');
+      console.log('[file.ts] dialog.open:', dialog.open);
       
-      const filePath = await open({
+      const filePath = await dialog.open({
         multiple: false,
         filters: [{
           name: 'Markdown',
@@ -30,7 +36,7 @@ export async function openFile(): Promise<{ content: string; path: string } | nu
       console.log('[file.ts] Selected file:', filePath);
       
       if (filePath && typeof filePath === 'string') {
-        const content = await readTextFile(filePath);
+        const content = await fs.readTextFile(filePath);
         console.log('[file.ts] File read successfully, length:', content.length);
         return { content, path: filePath };
       }
@@ -72,14 +78,12 @@ export async function saveFile(
   if (isTauri()) {
     try {
       console.log('[file.ts] Saving file, currentPath:', currentPath);
-      const { save } = await import('@tauri-apps/plugin-dialog');
-      const { writeTextFile } = await import('@tauri-apps/plugin-fs');
       
       // 如果有当前路径，直接保存；否则弹出保存对话框
       let filePath = currentPath;
       
       if (!filePath) {
-        filePath = await save({
+        filePath = await dialog.save({
           filters: [{
             name: 'Markdown',
             extensions: ['md']
@@ -91,7 +95,7 @@ export async function saveFile(
       console.log('[file.ts] Saving to:', filePath);
       
       if (filePath) {
-        await writeTextFile(filePath, content);
+        await fs.writeTextFile(filePath, content);
         console.log('[file.ts] File saved successfully');
         return filePath;
       }
@@ -121,10 +125,8 @@ export async function saveFileAs(content: string): Promise<string | null> {
   if (isTauri()) {
     try {
       console.log('[file.ts] Save As dialog...');
-      const { save } = await import('@tauri-apps/plugin-dialog');
-      const { writeTextFile } = await import('@tauri-apps/plugin-fs');
       
-      const filePath = await save({
+      const filePath = await dialog.save({
         filters: [{
           name: 'Markdown',
           extensions: ['md']
@@ -135,7 +137,7 @@ export async function saveFileAs(content: string): Promise<string | null> {
       console.log('[file.ts] Save As path:', filePath);
       
       if (filePath) {
-        await writeTextFile(filePath, content);
+        await fs.writeTextFile(filePath, content);
         console.log('[file.ts] Save As completed successfully');
         return filePath;
       }
