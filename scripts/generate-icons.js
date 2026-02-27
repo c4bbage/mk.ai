@@ -60,10 +60,10 @@ async function generateIcons() {
     .toFile(path.join(iconDir, '1024x1024.png'));
   console.log('Generated 1024x1024.png (for icns)');
 
-  console.log('\\nIcon generation complete!');
-  console.log('\\nNote: For macOS, you need to convert to .icns format:');
+  console.log('\nIcon generation complete!');
+  console.log('\nNote: For macOS, you need to convert to .icns format:');
   console.log('  Use: https://cloudconvert.com/png-to-icns');
-  console.log('\\nNote: For Windows, you need to convert to .ico format:');
+  console.log('\nNote: For Windows, you need to convert to .ico format:');
   console.log('  Use: https://cloudconvert.com/png-to-ico');
 }
 

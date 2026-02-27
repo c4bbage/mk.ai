@@ -1,0 +1,121 @@
+.file-tree {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-secondary, #f8f9fa);
+  border-right: 1px solid var(--border-color, #e1e4e8);
+  font-size: 13px;
+  user-select: none;
+}
+
+.file-tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color, #e1e4e8);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary, #6a737d);
+}
+
+.file-tree-open-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.file-tree-open-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.file-tree-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 0;
+}
+
+.file-tree-root-name {
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--text-tertiary, #959da5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-tree-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 4px;
+  margin: 1px 4px;
+  transition: background 0.1s;
+}
+
+.file-tree-item:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.file-tree-item.active {
+  background: rgba(102, 126, 234, 0.12);
+  color: #667eea;
+  font-weight: 500;
+}
+
+.file-tree-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.file-tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-tree-children {
+  /* indent handled by inline style */
+}
+
+.file-tree-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 12px;
+  color: var(--text-tertiary, #959da5);
+  font-size: 12px;
+}
+
+.file-tree-open-folder {
+  padding: 8px 16px;
+  border: 1px dashed var(--border-color, #d1d5da);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  color: var(--text-secondary, #6a737d);
+  font-size: 13px;
+}
+
+.file-tree-open-folder:hover {
+  border-color: #667eea;
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.file-tree-loading {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-tertiary, #959da5);
+  font-size: 12px;
+}

@@ -11,6 +11,9 @@
   min-height: 100%;
   box-sizing: border-box;
   padding: 24px;
+  content-visibility: auto;
+  contain: layout style paint;
+  contain-intrinsic-size: 800px;
 }
 
 /* 滚动条样式 */
@@ -79,8 +82,47 @@
   position: relative;
 }
 
+/* 仅在支持时启用内容可见性与容器隔离 */
+@supports (content-visibility: auto) {
+  .preview-container .markdown-body {
+    content-visibility: auto;
+    contain: layout style paint;
+    contain-intrinsic-size: 800px;
+  }
+  .preview-block {
+    content-visibility: auto;
+    contain: layout style paint;
+    contain-intrinsic-size: 200px;
+  }
+}
+
+/* 大表格优化：固定布局避免反复测量 */
+.preview-container .markdown-body table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.preview-container .markdown-body th,
+.preview-container .markdown-body td {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* 图片优化：限制宽度并隔离布局影响 */
+.preview-container .markdown-body .md-image {
+  max-width: 100%;
+  height: auto;
+  display: inline-block;
+  contain: layout paint;
+}
+
 .preview-block {
   margin-bottom: 16px;
+  /* 将每个块隔离，减少重排影响范围 */
+  content-visibility: auto;
+  contain: layout style paint;
+  contain-intrinsic-size: 200px;
 }
 
 .preview-block:last-child {

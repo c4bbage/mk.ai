@@ -11,9 +11,11 @@ interface ToolbarProps {
   showEditor: boolean;
   showPreview: boolean;
   showOutline: boolean;
+  showFileTree?: boolean;
   onToggleEditor: () => void;
   onTogglePreview: () => void;
   onToggleOutline: () => void;
+  onToggleFileTree?: () => void;
   // 文件操作
   fileName?: string;
   isModified?: boolean;
@@ -23,6 +25,7 @@ interface ToolbarProps {
   onExportHTML: () => void;
   onExportPDF: () => void;
   onExportImage: () => void;
+  onCopyWeChat?: () => void;
   // 图片存储设置
   imageStorage?: ImageStorageStrategy;
   onImageStorageChange?: (strategy: ImageStorageStrategy) => void;
@@ -45,9 +48,11 @@ export function Toolbar({
   showEditor,
   showPreview,
   showOutline,
+  showFileTree,
   onToggleEditor,
   onTogglePreview,
   onToggleOutline,
+  onToggleFileTree,
   fileName = 'untitled.md',
   isModified = false,
   onOpenFile,
@@ -56,6 +61,7 @@ export function Toolbar({
   onExportHTML,
   onExportPDF,
   onExportImage,
+  onCopyWeChat,
   imageStorage = 'assets',
   onImageStorageChange,
   autoSave = true,
@@ -144,6 +150,15 @@ export function Toolbar({
                       <span className="menu-icon">🖼️</span>
                       <span className="menu-label">图片 (PNG)</span>
                     </button>
+                    {onCopyWeChat && (
+                      <>
+                        <div className="menu-divider" />
+                        <button className="menu-item" onClick={() => { onCopyWeChat(); setShowFileMenu(false); setShowExportMenu(false); }}>
+                          <span className="menu-icon">📋</span>
+                          <span className="menu-label">复制公众号格式</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -205,6 +220,16 @@ export function Toolbar({
       <div className="toolbar-center">
         {/* 视图切换 */}
         <div className="toolbar-group">
+          {onToggleFileTree && (
+            <button
+              className={`toolbar-btn ${showFileTree ? 'active' : ''}`}
+              onClick={onToggleFileTree}
+              title="显示/隐藏文件树"
+            >
+              <span className="btn-icon">📁</span>
+              <span className="btn-text">文件</span>
+            </button>
+          )}
           <button
             className={`toolbar-btn ${showOutline ? 'active' : ''}`}
             onClick={onToggleOutline}

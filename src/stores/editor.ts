@@ -39,9 +39,11 @@ interface EditorStore {
   showEditor: boolean;
   showPreview: boolean;
   showOutline: boolean;
+  showFileTree: boolean;
   toggleEditor: () => void;
   togglePreview: () => void;
   toggleOutline: () => void;
+  toggleFileTree: () => void;
   
   // 重置
   reset: () => void;
@@ -79,9 +81,11 @@ export const useEditorStore = create<EditorStore>((set) => ({
   showEditor: true,
   showPreview: true,
   showOutline: false,
+  showFileTree: false,
   toggleEditor: () => set((state) => ({ showEditor: !state.showEditor })),
   togglePreview: () => set((state) => ({ showPreview: !state.showPreview })),
   toggleOutline: () => set((state) => ({ showOutline: !state.showOutline })),
+  toggleFileTree: () => set((state) => ({ showFileTree: !state.showFileTree })),
   
   reset: () => set({
     content: DEFAULT_MARKDOWN,

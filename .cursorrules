@@ -47,9 +47,9 @@
 [X] 导出功能 (HTML/PNG/PDF)
 [X] 实时保存机制 (防抖 + 失焦保存 + 本地备份)
 [X] 大文件优化 (虚拟滚动 + Web Worker + LRU缓存)
+[X] 编辑器和预览同步滚动
 [ ] 图床上传 (GitHub/SM.MS)
 [ ] 微信公众号复制
-[ ] 拖拽分割线调整面板大小
 [ ] 拖拽分割线调整面板大小
 
 ## Lessons
@@ -66,4 +66,6 @@
   2. main.rs 中必须初始化插件（.plugin(tauri_plugin_dialog::init())）
   3. capabilities/default.json 配置权限（不要在 tauri.conf.json 的 plugins 字段配置）
 - **Tauri 2.x 权限配置已迁移**：不要在 tauri.conf.json 的 plugins 字段配置权限（如 plugins.fs.scope），这是 1.x 的旧格式，会报错 "unknown field"。所有权限配置都在 capabilities/*.json 文件中
-- 详细配置指南见：docs/Tauri插件配置指南.md
+- **React forwardRef 使用**：组件需要暴露 ref 时使用 forwardRef，注意处理 ref 的合并（同时支持内部 ref 和外部 ref）
+- **同步滚动实现**：使用滚动比例计算，设置防抖锁避免循环触发，监听 .cm-scroller（CodeMirror）和预览容器的 scroll 事件
+- 详细配置指南见：docs/Tauri插件配置指南.md、docs/主题新增指南.md

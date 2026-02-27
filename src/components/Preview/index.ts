@@ -1,2 +1,2 @@
-export { Preview } from './Preview';
+export { Preview, type PreviewRef } from './Preview';
 export { VirtualPreview } from './VirtualPreview';

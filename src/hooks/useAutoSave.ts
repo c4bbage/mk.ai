@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface AutoSaveOptions {
   /** 是否启用自动保存 */
@@ -17,7 +17,7 @@ interface AutoSaveOptions {
 
 /**
  * 自动保存 Hook
- * 
+ *
  * 功能：
  * 1. 防抖保存 - 停止输入后 N 秒自动保存
  * 2. 失焦保存 - 窗口失去焦点时保存
@@ -32,55 +32,58 @@ export function useAutoSave({
   onSave,
 }: AutoSaveOptions) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastSavedContent = useRef<string>(content);
+  const lastSavedContentRef = useRef<string>(content);
+  // Use refs for values accessed in timers to avoid stale closures
+  const contentRef = useRef(content);
+  const filePathRef = useRef(filePath);
+  const isModifiedRef = useRef(isModified);
+  const onSaveRef = useRef(onSave);
 
-  // 防抖保存
-  const debouncedSave = useCallback(() => {
+  // Keep refs in sync
+  contentRef.current = content;
+  filePathRef.current = filePath;
+  isModifiedRef.current = isModified;
+  onSaveRef.current = onSave;
+
+  // 防抖保存 — only depends on content changes, uses refs for latest values
+  useEffect(() => {
     if (!enabled || !filePath || !isModified) return;
-    
+
     if (timerRef.current) {
       clearTimeout(timerRef.current);
     }
-    
+
     timerRef.current = setTimeout(async () => {
-      if (content !== lastSavedContent.current) {
-        await onSave();
-        lastSavedContent.current = content;
-        console.log('[AutoSave] File saved');
+      if (contentRef.current !== lastSavedContentRef.current && filePathRef.current && isModifiedRef.current) {
+        await onSaveRef.current();
+        lastSavedContentRef.current = contentRef.current;
       }
     }, delay);
-  }, [enabled, filePath, isModified, content, delay, onSave]);
 
-  // 监听内容变化，触发防抖保存
-  useEffect(() => {
-    debouncedSave();
-    
     return () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
     };
-  }, [content, debouncedSave]);
+  }, [content, enabled, delay, filePath, isModified]);
 
   // 失焦保存
   useEffect(() => {
     if (!enabled) return;
 
     const handleVisibilityChange = async () => {
-      if (document.hidden && filePath && isModified) {
-        await onSave();
-        lastSavedContent.current = content;
-        console.log('[AutoSave] Saved on blur');
+      if (document.hidden && filePathRef.current && isModifiedRef.current) {
+        await onSaveRef.current();
+        lastSavedContentRef.current = contentRef.current;
       }
     };
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isModified) {
+      if (isModifiedRef.current) {
         e.preventDefault();
-        // 保存到 localStorage 作为备份
         localStorage.setItem('md-ai-backup', JSON.stringify({
-          content,
-          filePath,
+          content: contentRef.current,
+          filePath: filePathRef.current,
           timestamp: Date.now(),
         }));
       }
@@ -93,25 +96,24 @@ export function useAutoSave({
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [enabled, filePath, isModified, content, onSave]);
+  }, [enabled]);
 
   // 本地备份（每 30 秒）
   useEffect(() => {
     if (!enabled) return;
 
     const backupInterval = setInterval(() => {
-      if (isModified) {
+      if (isModifiedRef.current) {
         localStorage.setItem('md-ai-backup', JSON.stringify({
-          content,
-          filePath,
+          content: contentRef.current,
+          filePath: filePathRef.current,
           timestamp: Date.now(),
         }));
-        console.log('[AutoSave] Local backup created');
       }
     }, 30000);
 
     return () => clearInterval(backupInterval);
-  }, [enabled, content, filePath, isModified]);
+  }, [enabled]);
 }
 
 /**

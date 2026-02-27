@@ -50,8 +50,9 @@ function createWorker(): Worker | null {
     const url = URL.createObjectURL(blob);
     const worker = new Worker(url);
     
-    // 清理 URL
-    URL.revokeObjectURL(url);
+    // 重要：不要立即 revoke，延迟到 worker 终止或确认加载后再清理，避免竞态
+    // 我们在 hook 的清理阶段 terminate() 时再 revoke
+    (worker as any).__objectURL = url;
     
     return worker;
   } catch {
@@ -95,7 +96,14 @@ export function useMarkdownWorker({
     }
     
     return () => {
-      workerRef.current?.terminate();
+      if (workerRef.current) {
+        const url = (workerRef.current as any).__objectURL;
+        try {
+          workerRef.current.terminate();
+        } finally {
+          if (url) URL.revokeObjectURL(url);
+        }
+      }
       workerRef.current = null;
     };
   }, [shouldUseWorker]);
@@ -143,7 +151,7 @@ export function useMarkdownWorker({
     }
   }, [content, shouldUseWorker]);
   
-  // 内容变化时解析
+  // 内容变化时解析（在组合输入暂停时，外层应传入稳定内容）
   useEffect(() => {
     parse();
   }, [parse]);

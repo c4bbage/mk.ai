@@ -1,11 +1,27 @@
 import { marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
-import hljs from 'highlight.js';
+import hljs from 'highlight.js/lib/core';
+import ts from 'highlight.js/lib/languages/typescript';
+import js from 'highlight.js/lib/languages/javascript';
+import py from 'highlight.js/lib/languages/python';
+import jsonLang from 'highlight.js/lib/languages/json';
+import bash from 'highlight.js/lib/languages/bash';
+import mdLang from 'highlight.js/lib/languages/markdown';
+
+hljs.registerLanguage('typescript', ts);
+hljs.registerLanguage('javascript', js);
+hljs.registerLanguage('python', py);
+hljs.registerLanguage('json', jsonLang);
+hljs.registerLanguage('bash', bash);
+hljs.registerLanguage('markdown', mdLang);
 
 // 配置代码高亮
 marked.use(markedHighlight({
   langPrefix: 'hljs language-',
   highlight(code, lang) {
+    // 超大代码块（>500 行）跳过高亮，避免阻塞
+    const lines = code.split('\n').length;
+    if (lines > 500) return code;
     if (lang && hljs.getLanguage(lang)) {
       try {
         return hljs.highlight(code, { language: lang }).value;
@@ -23,7 +39,7 @@ const renderer = new marked.Renderer();
 // 自定义图片渲染
 renderer.image = ({ href, title, text }) => {
   const titleAttr = title ? ` title="${title}"` : '';
-  return `<img src="${href}" alt="${text || ''}"${titleAttr} loading="lazy" class="md-image" />`;
+  return `<img src="${href}" alt="${text || ''}"${titleAttr} loading="lazy" decoding="async" class="md-image" />`;
 };
 
 // 自定义链接渲染（新窗口打开）
@@ -45,30 +61,46 @@ marked.setOptions({
 export function parseMarkdown(content: string): string {
   // 保护数学公式块，避免被 marked 处理
   const mathBlocks: string[] = [];
-  
-  // 保护块级公式 $$...$$
-  let processed = content.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
-    mathBlocks.push(`<div class="math-block" data-tex="${encodeURIComponent(tex.trim())}"></div>`);
-    return `%%MATH_BLOCK_${mathBlocks.length - 1}%%`;
-  });
-  
-  // 保护行内公式 $...$（但不匹配 $$ 或单独的 $）
-  processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, tex) => {
-    mathBlocks.push(`<span class="math-inline" data-tex="${encodeURIComponent(tex.trim())}"></span>`);
-    return `%%MATH_BLOCK_${mathBlocks.length - 1}%%`;
-  });
-
   // 保护 Mermaid 代码块
   const mermaidBlocks: string[] = [];
+  // 保护通用代码块，避免行内数学替换污染代码内容
+  const codeBlocks: string[] = [];
+
+  let processed = content;
+
+  // 先保护 Mermaid 代码块，避免被后续代码块保护捕获两次
   processed = processed.replace(/```mermaid\n([\s\S]*?)```/g, (_, code) => {
     mermaidBlocks.push(`<div class="mermaid-block" data-code="${encodeURIComponent(code.trim())}"></div>`);
     return `%%MERMAID_BLOCK_${mermaidBlocks.length - 1}%%`;
   });
 
+  // 保护所有三引号代码块（包含语言标识）
+  processed = processed.replace(/```[a-zA-Z0-9_-]*\n([\s\S]*?)```/g, (m) => {
+    codeBlocks.push(m);
+    return `%%CODE_BLOCK_${codeBlocks.length - 1}%%`;
+  });
+
+  // 保护块级公式 $$...$$（仅在非代码块片段中）
+  processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
+    mathBlocks.push(`<div class="math-block" data-tex="${encodeURIComponent(tex.trim())}"></div>`);
+    return `%%MATH_BLOCK_${mathBlocks.length - 1}%%`;
+  });
+
+  // 保护行内公式 $...$（避免匹配 $$ 或单独 $）
+  processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, tex) => {
+    mathBlocks.push(`<span class="math-inline" data-tex="${encodeURIComponent(tex.trim())}"></span>`);
+    return `%%MATH_BLOCK_${mathBlocks.length - 1}%%`;
+  });
+
+  // 恢复代码块占位符，使 marked 正确解析代码块
+  codeBlocks.forEach((block, i) => {
+    processed = processed.replace(`%%CODE_BLOCK_${i}%%`, block);
+  });
+
   // 解析 Markdown
   let html = marked.parse(processed) as string;
 
-  // 还原数学公式
+  // 还原数学公式占位符
   mathBlocks.forEach((block, i) => {
     html = html.replace(`%%MATH_BLOCK_${i}%%`, block);
     // 处理被 <p> 包裹的情况

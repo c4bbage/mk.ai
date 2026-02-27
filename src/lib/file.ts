@@ -8,11 +8,44 @@ import * as fs from '@tauri-apps/plugin-fs';
 
 // 检测是否在 Tauri 环境中
 export function isTauri(): boolean {
-  const hasTauri = typeof window !== 'undefined' && '__TAURI__' in window;
-  console.log('[file.ts] isTauri check:', hasTauri);
-  console.log('[file.ts] dialog module:', dialog);
-  console.log('[file.ts] fs module:', fs);
-  return hasTauri;
+  return typeof window !== 'undefined' && '__TAURI__' in window;
+}
+
+/** Maximum file size we allow opening (10 MB) */
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+/** Allowed file extensions for open */
+const ALLOWED_EXTENSIONS = /\.(md|markdown|txt)$/i;
+
+/**
+ * Validate a file path string.
+ * Returns an error message or null if valid.
+ */
+export function validateFilePath(path: string): string | null {
+  if (!path || typeof path !== 'string') return '文件路径不能为空';
+  if (path.trim().length === 0) return '文件路径不能为空';
+  if (path.length > 1024) return '文件路径过长';
+  // Block null bytes (path traversal)
+  if (path.includes('\0')) return '文件路径包含非法字符';
+  return null;
+}
+
+/**
+ * Validate file content before saving.
+ * Returns an error message or null if valid.
+ */
+export function validateContent(content: string): string | null {
+  if (content == null) return '内容不能为空';
+  if (typeof content !== 'string') return '内容必须是字符串';
+  if (content.length > MAX_FILE_SIZE) return `文件内容过大（最大 ${MAX_FILE_SIZE / 1024 / 1024} MB）`;
+  return null;
+}
+
+/**
+ * Validate file extension is allowed.
+ */
+export function isAllowedExtension(path: string): boolean {
+  return ALLOWED_EXTENSIONS.test(path);
 }
 
 /**
@@ -20,11 +53,7 @@ export function isTauri(): boolean {
  */
 export async function openFile(): Promise<{ content: string; path: string } | null> {
   if (isTauri()) {
-    // Tauri 环境
     try {
-      console.log('[file.ts] Opening file dialog in Tauri...');
-      console.log('[file.ts] dialog.open:', dialog.open);
-      
       const filePath = await dialog.open({
         multiple: false,
         filters: [{
@@ -32,17 +61,14 @@ export async function openFile(): Promise<{ content: string; path: string } | nu
           extensions: ['md', 'markdown', 'txt']
         }]
       });
-      
-      console.log('[file.ts] Selected file:', filePath);
-      
+
       if (filePath && typeof filePath === 'string') {
         const content = await fs.readTextFile(filePath);
-        console.log('[file.ts] File read successfully, length:', content.length);
         return { content, path: filePath };
       }
       return null;
     } catch (error) {
-      console.error('[file.ts] Error opening file:', error);
+      console.error('[file] Error opening file:', error);
       alert('打开文件失败: ' + (error as Error).message);
       return null;
     }
@@ -52,7 +78,7 @@ export async function openFile(): Promise<{ content: string; path: string } | nu
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = '.md,.markdown,.txt';
-      
+
       input.onchange = async (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (file) {
@@ -62,7 +88,7 @@ export async function openFile(): Promise<{ content: string; path: string } | nu
           resolve(null);
         }
       };
-      
+
       input.click();
     });
   }
@@ -77,11 +103,8 @@ export async function saveFile(
 ): Promise<string | null> {
   if (isTauri()) {
     try {
-      console.log('[file.ts] Saving file, currentPath:', currentPath);
-      
-      // 如果有当前路径，直接保存；否则弹出保存对话框
       let filePath = currentPath;
-      
+
       if (!filePath) {
         filePath = await dialog.save({
           filters: [{
@@ -91,17 +114,14 @@ export async function saveFile(
           defaultPath: 'untitled.md'
         }) ?? undefined;
       }
-      
-      console.log('[file.ts] Saving to:', filePath);
-      
+
       if (filePath) {
         await fs.writeTextFile(filePath, content);
-        console.log('[file.ts] File saved successfully');
         return filePath;
       }
       return null;
     } catch (error) {
-      console.error('[file.ts] Error saving file:', error);
+      console.error('[file] Error saving file:', error);
       alert('保存文件失败: ' + (error as Error).message);
       return null;
     }
@@ -124,8 +144,6 @@ export async function saveFile(
 export async function saveFileAs(content: string): Promise<string | null> {
   if (isTauri()) {
     try {
-      console.log('[file.ts] Save As dialog...');
-      
       const filePath = await dialog.save({
         filters: [{
           name: 'Markdown',
@@ -133,17 +151,14 @@ export async function saveFileAs(content: string): Promise<string | null> {
         }],
         defaultPath: 'untitled.md'
       });
-      
-      console.log('[file.ts] Save As path:', filePath);
-      
+
       if (filePath) {
         await fs.writeTextFile(filePath, content);
-        console.log('[file.ts] Save As completed successfully');
         return filePath;
       }
       return null;
     } catch (error) {
-      console.error('[file.ts] Error in Save As:', error);
+      console.error('[file] Error in Save As:', error);
       alert('另存为失败: ' + (error as Error).message);
       return null;
     }
