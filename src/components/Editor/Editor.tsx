@@ -5,7 +5,9 @@ import { markdown } from '@codemirror/lang-markdown';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language';
 import { search, searchKeymap, highlightSelectionMatches } from '@codemirror/search';
-import { getImageFromClipboard, processImage } from '../../lib/image';
+import { vim } from '@replit/codemirror-vim';
+import { getImageFromClipboard, processImage, getImageFromDrop } from '../../lib/image';
+import { buildFontFamily, FONT_PRESETS, CODE_FONT_PRESETS } from '../../themes';
 import type { ImageStorageStrategy } from '../../types';
 import './Editor.css';
 import { perfMark } from '../../lib/performance';
@@ -14,6 +16,9 @@ interface EditorProps {
   value: string;
   onChange: (value: string) => void;
   fontSize?: number;
+  fontId?: string;
+  codeFontId?: string;
+  vimMode?: boolean;
   imageStorage?: ImageStorageStrategy;
   filePath?: string;
   onScroll?: (scrollTop: number, scrollHeight: number, clientHeight: number) => void;
@@ -39,6 +44,9 @@ export const Editor = forwardRef<EditorRef, EditorProps>(function Editor({
   value,
   onChange,
   fontSize = 16,
+  fontId = 'system',
+  codeFontId = 'jetbrains',
+  vimMode = false,
   imageStorage = 'assets',
   filePath,
   onScroll,
@@ -50,6 +58,19 @@ export const Editor = forwardRef<EditorRef, EditorProps>(function Editor({
   const isInternalChange = useRef(false);
   const scrollContainerRef = useRef<HTMLElement | null>(null);
   const fontSizeCompartmentRef = useRef(new Compartment());
+  const vimCompartmentRef = useRef(new Compartment());
+  const fontSizeRef = useRef(fontSize);
+  useEffect(() => { fontSizeRef.current = fontSize; }, [fontSize]);
+
+  // Keep latest callbacks in refs to avoid stale closures in the init effect
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+  const onScrollRef = useRef(onScroll);
+  useEffect(() => { onScrollRef.current = onScroll; }, [onScroll]);
+  const onCompositionStartRef = useRef(onCompositionStart);
+  useEffect(() => { onCompositionStartRef.current = onCompositionStart; }, [onCompositionStart]);
+  const onCompositionEndRef = useRef(onCompositionEnd);
+  useEffect(() => { onCompositionEndRef.current = onCompositionEnd; }, [onCompositionEnd]);
 
   // 暴露方法给父组件
   useImperativeHandle(ref, () => ({
@@ -109,18 +130,24 @@ export const Editor = forwardRef<EditorRef, EditorProps>(function Editor({
     },
   }));
 
-  // 处理图片粘贴
+  // 处理图片粘贴 — 使用 ref 避免 imageStorage/filePath 变化时重建编辑器
+  const imageStorageRef = useRef(imageStorage);
+  useEffect(() => { imageStorageRef.current = imageStorage; }, [imageStorage]);
+  const filePathRef = useRef(filePath);
+  useEffect(() => { filePathRef.current = filePath; }, [filePath]);
+
   const handlePaste = useCallback(async (event: ClipboardEvent) => {
     const imageFile = getImageFromClipboard(event);
     if (imageFile && editorRef.current) {
       event.preventDefault();
       try {
-        // 如果没有保存文档且不是 base64 模式，提示用户先保存
-        if (!filePath && imageStorage !== 'base64') {
+        const currentImageStorage = imageStorageRef.current;
+        const currentFilePath = filePathRef.current;
+        if (!currentFilePath && currentImageStorage !== 'base64') {
           console.warn('Document not saved, using base64 for image');
         }
-        
-        const imageMarkdown = await processImage(imageFile, imageStorage, filePath);
+
+        const imageMarkdown = await processImage(imageFile, currentImageStorage, currentFilePath);
         const view = editorRef.current;
         const { from } = view.state.selection.main;
         view.dispatch({
@@ -131,17 +158,18 @@ export const Editor = forwardRef<EditorRef, EditorProps>(function Editor({
         console.error('Failed to process image:', error);
       }
     }
-  }, [imageStorage, filePath]);
+  }, []);
 
   // 初始化编辑器
   useEffect(() => {
-    if (!containerRef.current || editorRef.current) return;
+    const container = containerRef.current;
+    if (!container || editorRef.current) return;
 
     const updateListener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         perfMark('editor_input');
         isInternalChange.current = true;
-        onChange(update.state.doc.toString());
+        onChangeRef.current(update.state.doc.toString());
         perfMark('editor_input_applied');
       }
     });
@@ -237,63 +265,95 @@ export const Editor = forwardRef<EditorRef, EditorProps>(function Editor({
         }),
         fontSizeCompartmentRef.current.of(EditorView.theme({
           '&': {
-            fontSize: `${fontSize}px`,
+            fontSize: `${fontSizeRef.current}px`,
+          },
+          '.cm-scroller': {
+            fontFamily: buildFontFamily(FONT_PRESETS.find(f => f.id === fontId) || FONT_PRESETS[0]),
+          },
+          '.cm-content .cm-code, .cm-line .cm-code': {
+            fontFamily: buildFontFamily(CODE_FONT_PRESETS.find(f => f.id === codeFontId) || CODE_FONT_PRESETS[0]),
           },
         })),
+        vimCompartmentRef.current.of(vimMode ? vim() : []),
       ],
     });
 
     editorRef.current = new EditorView({
       state,
-      parent: containerRef.current,
+      parent: container,
     });
+
+    // 暂存 handlePaste 供 cleanup 使用
+    const pasteHandler = handlePaste;
     // First interactive: editor ready to accept input
     perfMark('first_interactive');
 
     // 获取滚动容器 (.cm-scroller)
-    scrollContainerRef.current = containerRef.current.querySelector('.cm-scroller');
+    const scrollContainer = container.querySelector('.cm-scroller') as HTMLElement | null;
+    scrollContainerRef.current = scrollContainer;
 
     // 添加粘贴事件监听
-    containerRef.current.addEventListener('paste', handlePaste);
+    container.addEventListener('paste', handlePaste, true);
+    // 添加拖拽事件监听（图片插入）— 使用 ref 读取最新值
+    const handleDrop = async (event: DragEvent) => {
+      const imageFile = getImageFromDrop(event);
+      if (imageFile && editorRef.current) {
+        event.preventDefault();
+        event.stopPropagation();
+        try {
+          const imageMarkdown = await processImage(imageFile, imageStorageRef.current, filePathRef.current);
+          const view = editorRef.current;
+          const pos = view.posAtCoords({ x: event.clientX, y: event.clientY }) ?? view.state.selection.main.head;
+          view.dispatch({
+            changes: { from: pos, insert: imageMarkdown },
+            selection: { anchor: pos + imageMarkdown.length },
+          });
+        } catch (error) {
+          console.error('Failed to process dropped image:', error);
+        }
+      }
+    };
+    container.addEventListener('drop', handleDrop, true);
+    const handleDragOver = (e: DragEvent) => { if (e.dataTransfer?.types.includes('Files')) e.preventDefault(); };
+    container.addEventListener('dragover', handleDragOver);
 
     // 监听 IME 组合输入，通知外层暂停预览更新
     const handleCompositionStart = () => {
-      if (typeof onCompositionStart === 'function') onCompositionStart();
+      if (typeof onCompositionStartRef.current === 'function') onCompositionStartRef.current();
     };
     const handleCompositionEnd = () => {
-      if (typeof onCompositionEnd === 'function') onCompositionEnd();
+      if (typeof onCompositionEndRef.current === 'function') onCompositionEndRef.current();
     };
-    containerRef.current.addEventListener('compositionstart', handleCompositionStart);
-    containerRef.current.addEventListener('compositionend', handleCompositionEnd);
+    container.addEventListener('compositionstart', handleCompositionStart);
+    container.addEventListener('compositionend', handleCompositionEnd);
 
     // 添加滚动事件监听
-    if (scrollContainerRef.current && onScroll) {
-      const handleScroll = () => {
+    const currentOnScroll = onScrollRef.current;
+    let handleScroll: (() => void) | null = null;
+    if (scrollContainer && currentOnScroll) {
+      handleScroll = () => {
         if (scrollContainerRef.current) {
           const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-          onScroll(scrollTop, scrollHeight, clientHeight);
+          currentOnScroll(scrollTop, scrollHeight, clientHeight);
         }
       };
-      scrollContainerRef.current.addEventListener('scroll', handleScroll);
-      
-      return () => {
-        containerRef.current?.removeEventListener('paste', handlePaste);
-        containerRef.current?.removeEventListener('compositionstart', handleCompositionStart);
-        containerRef.current?.removeEventListener('compositionend', handleCompositionEnd);
-        scrollContainerRef.current?.removeEventListener('scroll', handleScroll);
-        editorRef.current?.destroy();
-        editorRef.current = null;
-      };
+      scrollContainer.addEventListener('scroll', handleScroll);
     }
 
     return () => {
-      containerRef.current?.removeEventListener('paste', handlePaste);
-      containerRef.current?.removeEventListener('compositionstart', handleCompositionStart);
-      containerRef.current?.removeEventListener('compositionend', handleCompositionEnd);
+      container.removeEventListener('paste', pasteHandler, true);
+      container.removeEventListener('drop', handleDrop, true);
+      container.removeEventListener('dragover', handleDragOver);
+      container.removeEventListener('compositionstart', handleCompositionStart);
+      container.removeEventListener('compositionend', handleCompositionEnd);
+      if (handleScroll && scrollContainer) {
+        scrollContainer.removeEventListener('scroll', handleScroll);
+      }
       editorRef.current?.destroy();
       editorRef.current = null;
     };
-  }, [fontSize, handlePaste, onScroll, onCompositionStart, onCompositionEnd]);
+  }, [handlePaste]);
+  // handlePaste is stable (useCallback with []), so this runs once.
 
   // 同步外部值变化
   useEffect(() => {
@@ -312,7 +372,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(function Editor({
     isInternalChange.current = false;
   }, [value]);
 
-  // 运行时字体大小更新：使用 Compartment 重新配置，避免重建 EditorView
+  // 运行时字体大小 + 字体族更新
   useEffect(() => {
     if (editorRef.current) {
       editorRef.current.dispatch({
@@ -321,11 +381,26 @@ export const Editor = forwardRef<EditorRef, EditorProps>(function Editor({
             '&': {
               fontSize: `${fontSize}px`,
             },
+            '.cm-scroller': {
+              fontFamily: buildFontFamily(FONT_PRESETS.find(f => f.id === fontId) || FONT_PRESETS[0]),
+            },
+            '.cm-content .cm-code, .cm-line .cm-code': {
+              fontFamily: buildFontFamily(CODE_FONT_PRESETS.find(f => f.id === codeFontId) || CODE_FONT_PRESETS[0]),
+            },
           })
         ),
       });
     }
-  }, [fontSize]);
+  }, [fontSize, fontId, codeFontId]);
+
+  // Vim 模式切换
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.dispatch({
+        effects: vimCompartmentRef.current.reconfigure(vimMode ? vim() : []),
+      });
+    }
+  }, [vimMode]);
 
   return (
     <div className="editor-container" ref={containerRef} />

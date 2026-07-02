@@ -1,10 +1,9 @@
-/* ===== 液态玻璃预览区 ===== */
+/* ===== Preview (Typora-style: clean, minimal) ===== */
 .preview-container {
   height: 100%;
   width: 100%;
   overflow: auto;
   background: transparent;
-  border-radius: 20px;
 }
 
 .preview-container .markdown-body {
@@ -250,28 +249,31 @@
 }
 
 /* 暗色模式 */
-@media (prefers-color-scheme: dark) {
-  .preview-container .markdown-body {
-    color: rgba(255, 255, 255, 0.9);
-  }
+[data-color-mode="dark"] .preview-container .mermaid-block:not(.mermaid-rendered) {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: rgba(102, 126, 234, 0.3);
+  color: rgba(255, 255, 255, 0.5);
+}
 
-  .preview-container .mermaid-block:not(.mermaid-rendered) {
-    background: rgba(102, 126, 234, 0.1);
-    border-color: rgba(102, 126, 234, 0.3);
-    color: rgba(255, 255, 255, 0.5);
-  }
+[data-color-mode="dark"] .preview-container .math-block:not(.math-rendered),
+[data-color-mode="dark"] .preview-container .math-inline:not(.math-rendered) {
+  background: rgba(102, 126, 234, 0.15);
+  color: rgba(255, 255, 255, 0.5);
+}
 
-  .preview-container .math-block:not(.math-rendered),
-  .preview-container .math-inline:not(.math-rendered) {
-    background: rgba(102, 126, 234, 0.15);
-    color: rgba(255, 255, 255, 0.5);
-  }
+[data-color-mode="dark"] .preview-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
 
-  .preview-container::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-  }
+[data-color-mode="dark"] .preview-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
 
-  .preview-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
-  }
+[data-color-mode="dark"] .render-progress {
+  background: rgba(30, 30, 30, 0.9);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-color-mode="dark"] .parse-indicator {
+  background: rgba(30, 30, 30, 0.95);
 }

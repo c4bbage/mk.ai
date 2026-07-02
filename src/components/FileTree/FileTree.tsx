@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { isTauri } from '../../lib/file';
 import './FileTree.css';
 
@@ -16,22 +16,29 @@ interface FileTreeProps {
 }
 
 export function FileTree({ currentFilePath, onFileSelect, onFolderOpen }: FileTreeProps) {
-  const [rootPath, setRootPath] = useState<string | null>(null);
-  const [entries, setEntries] = useState<FileEntry[]>([]);
+  const [manualRoot, setManualRoot] = useState<string | null>(null);
+  const [entriesState, setEntriesState] = useState<FileEntry[]>([]);
+  const [loadedRoot, setLoadedRoot] = useState<string | null>(null);
   const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; entry: FileEntry | null } | null>(null);
+  const [renaming, setRenaming] = useState<{ path: string; originalName: string } | null>(null);
+  const [creating, setCreating] = useState<{ parentPath: string; isDir: boolean } | null>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const createInputRef = useRef<HTMLInputElement>(null);
 
-  // Derive root from current file path
-  useEffect(() => {
+  // Derive rootPath from current file path; manual override takes priority
+  const rootPath = useMemo(() => {
+    if (manualRoot) return manualRoot;
     if (currentFilePath && isTauri()) {
       const dir = currentFilePath.split(/[/\\]/).slice(0, -1).join('/');
-      if (dir && dir !== rootPath) {
-        setRootPath(dir);
-      }
+      return dir || null;
     }
-  }, [currentFilePath, rootPath]);
+    return null;
+  }, [manualRoot, currentFilePath]);
 
-  // Load directory contents
+  const loading = rootPath !== null && loadedRoot !== rootPath;
+  const entries = loadedRoot === rootPath ? entriesState : [];
+
   const loadDirectory = useCallback(async (dirPath: string): Promise<FileEntry[]> => {
     if (!isTauri()) return [];
     try {
@@ -41,7 +48,7 @@ export function FileTree({ currentFilePath, onFileSelect, onFolderOpen }: FileTr
 
       for (const item of items) {
         const name = item.name;
-        if (!name || name.startsWith('.')) continue; // skip hidden files
+        if (!name || name.startsWith('.')) continue;
         const fullPath = `${dirPath}/${name}`;
         const isDir = item.isDirectory;
 
@@ -50,7 +57,6 @@ export function FileTree({ currentFilePath, onFileSelect, onFolderOpen }: FileTr
         }
       }
 
-      // Sort: dirs first, then alphabetical
       fileEntries.sort((a, b) => {
         if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
         return a.name.localeCompare(b.name);
@@ -63,24 +69,48 @@ export function FileTree({ currentFilePath, onFileSelect, onFolderOpen }: FileTr
     }
   }, []);
 
-  // Load root directory
-  useEffect(() => {
-    if (!rootPath) return;
-    setLoading(true);
-    loadDirectory(rootPath).then(items => {
-      setEntries(items);
-      setLoading(false);
-    });
+  // Reload a directory and update state
+  const reloadDir = useCallback(async (dirPath: string) => {
+    const items = await loadDirectory(dirPath);
+    if (dirPath === rootPath) {
+      setEntriesState(items);
+    } else {
+      // Update children of a subdirectory in entries recursively
+      const updateChildren = (list: FileEntry[]): FileEntry[] => {
+        return list.map(e => {
+          if (e.path === dirPath) {
+            const updated = { ...e, children: items };
+            return updated;
+          }
+          if (e.children) {
+            return { ...e, children: updateChildren(e.children) };
+          }
+          return e;
+        });
+      };
+      setEntriesState(prev => updateChildren(prev));
+    }
   }, [rootPath, loadDirectory]);
 
-  // Open folder dialog
+  useEffect(() => {
+    if (!rootPath) return;
+    let cancelled = false;
+    loadDirectory(rootPath).then(items => {
+      if (!cancelled) {
+        setLoadedRoot(rootPath);
+        setEntriesState(items);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [rootPath, loadDirectory]);
+
   const handleOpenFolder = useCallback(async () => {
     if (!isTauri()) return;
     try {
       const dialog = await import('@tauri-apps/plugin-dialog');
       const selected = await dialog.open({ directory: true, multiple: false });
       if (selected && typeof selected === 'string') {
-        setRootPath(selected);
+        setManualRoot(selected);
         setExpandedDirs(new Set());
         onFolderOpen?.(selected);
       }
@@ -89,33 +119,117 @@ export function FileTree({ currentFilePath, onFileSelect, onFolderOpen }: FileTr
     }
   }, [onFolderOpen]);
 
-  // Toggle directory expansion
   const toggleDir = useCallback(async (entry: FileEntry) => {
     const newExpanded = new Set(expandedDirs);
     if (newExpanded.has(entry.path)) {
       newExpanded.delete(entry.path);
     } else {
       newExpanded.add(entry.path);
-      // Load children if not already loaded
       if (!entry.children) {
         const children = await loadDirectory(entry.path);
-        entry.children = children;
-        // Force re-render by creating new entries array
-        setEntries(prev => [...prev]);
+        setEntriesState(prev => prev.map(e =>
+          e.path === entry.path ? { ...e, children } : e
+        ));
       }
     }
     setExpandedDirs(newExpanded);
   }, [expandedDirs, loadDirectory]);
+
+  // ─── File operations ───
+  const handleCreate = useCallback(async (name: string, parentPath: string, isDir: boolean) => {
+    if (!name.trim()) { setCreating(null); return; }
+    const fullPath = `${parentPath}/${name.trim()}`;
+    try {
+      const fs = await import('@tauri-apps/plugin-fs');
+      if (isDir) {
+        await fs.mkdir(fullPath);
+      } else {
+        await fs.writeTextFile(fullPath, '');
+      }
+      await reloadDir(parentPath);
+      if (!isDir) {
+        onFileSelect(fullPath);
+      }
+    } catch (e) {
+      console.error('[FileTree] Failed to create:', e);
+    }
+    setCreating(null);
+  }, [reloadDir, onFileSelect]);
+
+  const handleRename = useCallback(async (oldPath: string, newName: string) => {
+    if (!newName.trim() || !renaming) { setRenaming(null); return; }
+    const dir = oldPath.split(/[/\\]/).slice(0, -1).join('/');
+    const newPath = `${dir}/${newName.trim()}`;
+    if (newPath === oldPath) { setRenaming(null); return; }
+    try {
+      const fs = await import('@tauri-apps/plugin-fs');
+      await fs.rename(oldPath, newPath);
+      await reloadDir(dir);
+    } catch (e) {
+      console.error('[FileTree] Failed to rename:', e);
+    }
+    setRenaming(null);
+  }, [renaming, reloadDir]);
+
+  const handleDelete = useCallback(async (path: string, isDir: boolean) => {
+    const name = path.split(/[/\\]/).pop() || path;
+    if (!window.confirm(`确定删除 ${name}？`)) return;
+    try {
+      const fs = await import('@tauri-apps/plugin-fs');
+      if (isDir) {
+        await fs.remove(path, { recursive: true });
+      } else {
+        await fs.remove(path);
+      }
+      const dir = path.split(/[/\\]/).slice(0, -1).join('/');
+      await reloadDir(dir);
+    } catch (e) {
+      console.error('[FileTree] Failed to delete:', e);
+    }
+  }, [reloadDir]);
+
+  // ─── Context menu ───
+  const handleContextMenu = useCallback((e: React.MouseEvent, entry: FileEntry | null) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, entry });
+  }, []);
+
+  useEffect(() => {
+    const close = () => setContextMenu(null);
+    window.addEventListener('click', close);
+    window.addEventListener('blur', close);
+    return () => {
+      window.removeEventListener('click', close);
+      window.removeEventListener('blur', close);
+    };
+  }, []);
+
+  // Focus rename/create inputs when shown
+  useEffect(() => {
+    if (renaming) renameInputRef.current?.select();
+  }, [renaming]);
+  useEffect(() => {
+    if (creating) createInputRef.current?.focus();
+  }, [creating]);
+
+  // Get parent path for context menu actions
+  const getParentPath = useCallback((entry: FileEntry | null) => {
+    if (entry) {
+      return entry.isDir ? entry.path : entry.path.split(/[/\\]/).slice(0, -1).join('/');
+    }
+    return rootPath || '';
+  }, [rootPath]);
 
   const rootName = useMemo(() => {
     if (!rootPath) return null;
     return rootPath.split(/[/\\]/).pop() || rootPath;
   }, [rootPath]);
 
-  // Render a single entry
   const renderEntry = (entry: FileEntry, depth: number = 0): React.JSX.Element => {
     const isExpanded = expandedDirs.has(entry.path);
     const isActive = entry.path === currentFilePath;
+    const isRenaming = renaming?.path === entry.path;
 
     return (
       <div key={entry.path}>
@@ -123,26 +237,61 @@ export function FileTree({ currentFilePath, onFileSelect, onFolderOpen }: FileTr
           className={`file-tree-item ${isActive ? 'active' : ''} ${entry.isDir ? 'is-dir' : ''}`}
           style={{ paddingLeft: `${depth * 16 + 8}px` }}
           onClick={() => {
-            if (entry.isDir) {
-              toggleDir(entry);
-            } else {
-              onFileSelect(entry.path);
+            if (!isRenaming) {
+              if (entry.isDir) toggleDir(entry);
+              else onFileSelect(entry.path);
             }
           }}
+          onContextMenu={(e) => handleContextMenu(e, entry)}
         >
           <span className="file-tree-icon">
             {entry.isDir ? (isExpanded ? '📂' : '📁') : '📄'}
           </span>
-          <span className="file-tree-name">{entry.name}</span>
+          {isRenaming ? (
+            <input
+              ref={renameInputRef}
+              className="file-tree-rename-input"
+              defaultValue={entry.name}
+              onBlur={(e) => handleRename(entry.path, e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                if (e.key === 'Escape') setRenaming(null);
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <span className="file-tree-name">{entry.name}</span>
+          )}
         </div>
         {entry.isDir && isExpanded && entry.children && (
           <div className="file-tree-children">
+            {creating?.parentPath === entry.path && (
+              <div className="file-tree-item" style={{ paddingLeft: `${(depth + 1) * 16 + 8}px` }}>
+                <span className="file-tree-icon">{creating.isDir ? '📁' : '📄'}</span>
+                <input
+                  ref={createInputRef}
+                  className="file-tree-rename-input"
+                  placeholder={creating.isDir ? '新文件夹' : '新文件.md'}
+                  onBlur={(e) => handleCreate(e.target.value, entry.path, creating.isDir)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                    if (e.key === 'Escape') setCreating(null);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            )}
             {entry.children.map(child => renderEntry(child, depth + 1))}
           </div>
         )}
       </div>
     );
   };
+
+  // New file/folder button in header
+  const handleNewFile = useCallback(() => {
+    setCreating({ parentPath: rootPath || '', isDir: false });
+  }, [rootPath]);
 
   if (!isTauri()) {
     return (
@@ -158,12 +307,14 @@ export function FileTree({ currentFilePath, onFileSelect, onFolderOpen }: FileTr
   }
 
   return (
-    <div className="file-tree">
+    <div className="file-tree" onContextMenu={(e) => handleContextMenu(e, null)}>
       <div className="file-tree-header">
-        <span className="file-tree-title">文件</span>
-        <button className="file-tree-open-btn" onClick={handleOpenFolder} title="打开文件夹">
-          📂
-        </button>
+        <span className="file-tree-title">{rootName || '文件'}</span>
+        <div className="file-tree-actions">
+          <button className="file-tree-action-btn" onClick={handleNewFile} title="新建文件">📄+</button>
+          <button className="file-tree-action-btn" onClick={() => setCreating({ parentPath: rootPath || '', isDir: true })} title="新建文件夹">📁+</button>
+          <button className="file-tree-action-btn" onClick={handleOpenFolder} title="打开文件夹">📂</button>
+        </div>
       </div>
 
       {loading && <div className="file-tree-loading">加载中...</div>}
@@ -178,13 +329,64 @@ export function FileTree({ currentFilePath, onFileSelect, onFolderOpen }: FileTr
 
       {rootPath && !loading && (
         <div className="file-tree-content">
-          <div className="file-tree-root-name" title={rootPath}>
-            {rootName}
-          </div>
-          {entries.length === 0 ? (
-            <div className="file-tree-empty">无 Markdown 文件</div>
+          {creating?.parentPath === rootPath && (
+            <div className="file-tree-item" style={{ paddingLeft: '8px' }}>
+              <span className="file-tree-icon">{creating.isDir ? '📁' : '📄'}</span>
+              <input
+                ref={createInputRef}
+                className="file-tree-rename-input"
+                placeholder={creating.isDir ? '新文件夹' : '新文件.md'}
+                onBlur={(e) => handleCreate(e.target.value, rootPath, creating.isDir)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                  if (e.key === 'Escape') setCreating(null);
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
+          {entries.length === 0 && !creating ? (
+            <div className="file-tree-empty" onClick={() => handleNewFile()}>无文件，点击新建</div>
           ) : (
             entries.map(entry => renderEntry(entry))
+          )}
+        </div>
+      )}
+
+      {/* Context menu */}
+      {contextMenu && (
+        <div
+          className="file-tree-context-menu"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {contextMenu.entry ? (
+            <>
+              <button className="ctx-menu-item" onClick={() => {
+                if (!contextMenu.entry!.isDir) onFileSelect(contextMenu.entry!.path);
+                setContextMenu(null);
+              }}>打开</button>
+              <button className="ctx-menu-item" onClick={() => {
+                setRenaming({ path: contextMenu.entry!.path, originalName: contextMenu.entry!.name });
+                setContextMenu(null);
+              }}>重命名</button>
+              <div className="ctx-menu-separator" />
+              <button className="ctx-menu-item ctx-danger" onClick={() => {
+                handleDelete(contextMenu.entry!.path, contextMenu.entry!.isDir);
+                setContextMenu(null);
+              }}>删除</button>
+            </>
+          ) : (
+            <>
+              <button className="ctx-menu-item" onClick={() => {
+                setCreating({ parentPath: getParentPath(null), isDir: false });
+                setContextMenu(null);
+              }}>新建文件</button>
+              <button className="ctx-menu-item" onClick={() => {
+                setCreating({ parentPath: getParentPath(null), isDir: true });
+                setContextMenu(null);
+              }}>新建文件夹</button>
+            </>
           )}
         </div>
       )}

@@ -1,0 +1,15 @@
+{
+  "checkpoints": [
+    {
+      "id": "manual_000_2a101e32",
+      "type": "manual",
+      "created_at": "2026-01-23T17:17:38.681065",
+      "iteration": 0,
+      "description": "Initial execution state",
+      "tags": [
+        "initialization"
+      ]
+    }
+  ],
+  "last_checkpoint": "manual_000_2a101e32"
+}

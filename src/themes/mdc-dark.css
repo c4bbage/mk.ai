@@ -1,0 +1,63 @@
+/* ===== Markdown.com.cn 深蓝主题 ===== */
+.theme-mdc-dark {
+  --color-text: #e0e0e0;
+  --color-text-secondary: #b0b0b0;
+  --color-text-muted: #808080;
+  --color-bg: #16213e;
+  --color-bg-secondary: #1a1a2e;
+  --color-bg-code: #161b22;
+  --color-bg-pre: #161b22;
+  --color-border: #2a2a4a;
+  --color-link: #4cc9f0;
+  --color-accent: #4cc9f0;
+}
+
+.theme-mdc-dark .markdown-body {
+  background: var(--color-bg);
+}
+
+.theme-mdc-dark .markdown-body h1 {
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: 8px;
+}
+
+.theme-mdc-dark .markdown-body h2 {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 6px;
+}
+
+.theme-mdc-dark .markdown-body blockquote {
+  border-left-color: var(--color-accent);
+  background: var(--color-bg-secondary);
+  border-radius: 0 6px 6px 0;
+}
+
+.theme-mdc-dark .markdown-body code {
+  background: rgba(76, 201, 240, 0.15);
+  color: #90e0ef;
+}
+
+.theme-mdc-dark .markdown-body pre {
+  background: var(--color-bg-code);
+  border: 1px solid var(--color-border);
+}
+
+.theme-mdc-dark .markdown-body th {
+  background: var(--color-bg-secondary);
+}
+
+.theme-mdc-dark .markdown-body tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.theme-mdc-dark .markdown-body a {
+  color: var(--color-link);
+}
+
+.theme-mdc-dark .markdown-body hr {
+  background: var(--color-border);
+}
+
+.theme-mdc-dark .markdown-body .md-image {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}

@@ -22,7 +22,6 @@
     {
       "identifier": "fs:scope",
       "allow": [
-        "**",
         "$HOME/**",
         "$DOCUMENT/**",
         "$DESKTOP/**",
@@ -34,14 +33,7 @@
         "$APPCACHE/**",
         "$APPLOG/**",
         "$TEMP/**",
-        "$RESOURCE/**",
-        "/Users/**",
-        "/Volumes/**",
-        "/tmp/**",
-        "C:\\**",
-        "D:\\**",
-        "E:\\**",
-        "F:\\**"
+        "$RESOURCE/**"
       ]
     },
     
@@ -50,6 +42,8 @@
     "dialog:allow-save",
     "dialog:allow-message",
     "dialog:allow-ask",
-    "dialog:allow-confirm"
+    "dialog:allow-confirm",
+
+    "clipboard-manager:allow-write-image"
   ]
 }

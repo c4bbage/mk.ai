@@ -1,0 +1,376 @@
+[
+  {
+    "step_number": 1,
+    "phase": "性能目标对齐与基线度量",
+    "description": "明确指标与度量方案，搭建基准文档与埋点，跑当前版本获取基线。",
+    "agents": [
+      "claude",
+      "gemini"
+    ],
+    "parallel": false,
+    "requirements": [
+      "定义关键指标：输入延迟（p50/p95）、预览更新延迟（p50/p95）、FPS、长任务比例、冷启动时长、内存峰值。",
+      "准备基准文档集（纯文本/代码密集/图文混合，1–5MB，10k–100k 行）。",
+      "集成 Chrome/React Profiler、UserTiming/PerformanceObserver 埋点。"
+    ],
+    "deliverables": [
+      "指标与度量方案文档（RFC）。",
+      "基线报告（当前版本各场景指标）。"
+    ],
+    "acceptance_criteria": [
+      "指标与文档经评审通过。",
+      "能稳定复现并输出基线数据集。"
+    ],
+    "context": "",
+    "prompt": "性能目标对齐与基线度量\n- **Agent**: claude, gemini\n- **模式**: sequential\n- **描述**: 明确指标与度量方案，搭建基准文档与埋点，跑当前版本获取基线。\n- **要求**:\n  - 定义关键指标：输入延迟（p50/p95）、预览更新延迟（p50/p95）、FPS、长任务比例、冷启动时长、内存峰值。\n  - 准备基准文档集（纯文本/代码密集/图文混合",
+    "execution_type": "llm_required",
+    "tool_name": null,
+    "tool_params": {}
+  },
+  {
+    "step_number": 2,
+    "phase": "快速收益改造（编辑优先 + 降渲染）",
+    "description": "引入防抖与 React 18 并发特性，降低 React 重渲染与无关更新；IME 组合输入保护。",
+    "agents": [
+      "codex"
+    ],
+    "parallel": false,
+    "requirements": [
+      "预览解析/高亮防抖 100–200ms，requestIdleCallback 补齐。",
+      "useDeferredValue/startTransition 让预览在后台更新；稳定 CodeMirror 配置（Compartment），仅订阅必要事务。",
+      "compositionstart/end 期间暂停预览更新，结束后批处理一次。"
+    ],
+    "deliverables": [
+      "PR：防抖与并发特性接入、CodeMirror 配置优化。",
+      "对比报告：基线 vs 改造后。"
+    ],
+    "acceptance_criteria": [
+      "输入延迟 p95 下降≥30%，卡顿显著减少。",
+      "无功能回归（撤销/重做、滚动、查找正常）。"
+    ],
+    "context": "",
+    "prompt": "快速收益改造（编辑优先 + 降渲染）\n- **Agent**: codex\n- **模式**: sequential\n- **描述**: 引入防抖与 React 18 并发特性，降低 React 重渲染与无关更新；IME 组合输入保护。\n- **要求**:\n  - 预览解析/高亮防抖 100–200ms，requestIdleCallback 补齐。\n  - useDeferredValue/st",
+    "execution_type": "llm_required",
+    "tool_name": null,
+    "tool_params": {}
+  },
+  {
+    "step_number": 3,
+    "phase": "CSS 内容可见性与样式层优化",
+    "description": "在预览块启用 content-visibility: auto、contain 与 contain-intrinsic-size，优化表格与图片渲染。",
+    "agents": [
+      "codex"
+    ],
+    "parallel": false,
+    "requirements": [
+      "针对预览块设置 content-visibility 与 contain；大表格用 table-layout: fixed；图片 lazy + decoding=async。",
+      "特性检测与降级（不支持内核回退策略）。"
+    ],
+    "deliverables": [
+      "PR：样式与容器优化。",
+      "对比报告：滚动与渲染性能提升。"
+    ],
+    "acceptance_criteria": [
+      "视口外渲染成本显著下降，滚动 FPS p95 ≥ 45。",
+      "无布局错乱与可访问性回归。"
+    ],
+    "context": "",
+    "prompt": "CSS 内容可见性与样式层优化\n- **Agent**: codex\n- **模式**: sequential\n- **描述**: 在预览块启用 content-visibility: auto、contain 与 contain-intrinsic-size，优化表格与图片渲染。\n- **要求**:\n  - 针对预览块设置 content-visibility 与 contain；大表格用 ta",
+    "execution_type": "llm_required",
+    "tool_name": null,
+    "tool_params": {}
+  },
+  {
+    "step_number": 4,
+    "phase": "Worker 管线 MVP（全量传输）",
+    "description": "将 Markdown 解析与代码高亮迁至单“管线 Worker”，主线程仅挂载结果。",
+    "agents": [
+      "claude",
+      "codex"
+    ],
+    "parallel": false,
+    "requirements": [
+      "设计协议：postMessage（或 Comlink），返回 HTML + 位置映射；统一 sanitize 在 Worker。",
+      "版本/序列号机制，主线程只应用最新结果。"
+    ],
+    "deliverables": [
+      "Worker 原型与接入 PR。",
+      "性能对比（编辑流畅度、主线程占用）。"
+    ],
+    "acceptance_criteria": [
+      "打字流畅度明显提升，长任务比例下降≥30%。",
+      "无安全风险（Trusted Types/单点 sanitize）。"
+    ],
+    "context": "",
+    "prompt": "Worker 管线 MVP（全量传输）\n- **Agent**: claude, codex\n- **模式**: sequential\n- **描述**: 将 Markdown 解析与代码高亮迁至单“管线 Worker”，主线程仅挂载结果。\n- **要求**:\n  - 设计协议：postMessage（或 Comlink），返回 HTML + 位置映射；统一 sanitize 在 Worker。\n",
+    "execution_type": "llm_required",
+    "tool_name": null,
+    "tool_params": {}
+  },
+  {
+    "step_number": 5,
+    "phase": "增量 patch 协议与镜像文本",
+    "description": "主线程只发送增量变更（from/to/inserted），Worker 维护文档镜像（Rope/Piece Table）。",
+    "agents": [
+      "codex"
+    ],
+    "parallel": false,
+    "requirements": [
+      "Patch 格式：{seq, docVersion, changes[]，hint}；Transferable ArrayBuffer；批量合并 50–150ms 内多次编辑。",
+      "镜像数据结构避免 O(n) 拼接；与 CodeMirror 历史一致。"
+    ],
+    "deliverables": [
+      "协议文档与实现 PR。",
+      "一致性测试用例（撤销/重做、并发输入）。"
+    ],
+    "acceptance_criteria": [
+      "高频输入下 IPC 开销显著降低，预览延迟 p95 < 200ms（大文档）。",
+      "历史与预览一致性通过测试。"
+    ],
+    "context": "",
+    "prompt": "增量 patch 协议与镜像文本\n- **Agent**: codex\n- **模式**: sequential\n- **描述**: 主线程只发送增量变更（from/to/inserted），Worker 维护文档镜像（Rope/Piece Table）。\n- **要求**:\n  - Patch 格式：{seq, docVersion, changes[]，hint}；Transferable A",
+    "execution_type": "llm_required",
+    "tool_name": null,
+    "tool_params": {}
+  },
+  {
+    "step_number": 6,
+    "phase": "块模型与缓存（block store）",
+    "description": "引入块级模型（标题/段落/代码块），维护行号→块映射、哈希与高度估算；仅更新受影响块。",
+    "agents": [
+      "claude",
+      "codex"
+    ],
+    "parallel": false,
+    "requirements": [
+      "使用 micromark/Lezer 做块边界识别；保守失效策略（相邻块扩散，跨块依赖图）。",
+      "LRU 缓存（内存上限），IndexedDB 持久化（压缩存储）。"
+    ],
+    "deliverables": [
+      "BlockStore 实现与 PR。",
+      "缓存策略与失效规则文档。"
+    ],
+    "acceptance_criteria": [
+      "仅受影响块重解析，预览 DOM 更新量显著下降。",
+      "首屏回放缓存可用，冷启动预览显著加速。"
+    ],
+    "context": "",
+    "prompt": "块模型与缓存（block store）\n- **Agent**: claude, codex\n- **模式**: sequential\n- **描述**: 引入块级模型（标题/段落/代码块），维护行号→块映射、哈希与高度估算；仅更新受影响块。\n- **要求**:\n  - 使用 micromark/Lezer 做块边界识别；保守失效策略（相邻块扩散，跨块依赖图）。\n  - LRU 缓存（内存上限），",
+    "execution_type": "llm_required",
+    "tool_name": null,
+    "tool_params": {}
+  },
+  {
+    "step_number": 7,
+    "phase": "两阶段渲染与高亮",
+    "description": "快速通道先渲染无高亮 HTML，精细通道异步替换高亮结果；语言包按需加载与预热。",
+    "agents": [
+      "codex"
+    ],
+    "parallel": false,
+    "requirements": [
+      "高亮结果按块缓存（语言+哈希）；未命中语言用通用配色占位。",
+      "语言包预测与 idle 预热；Shiki/Onigasm 流式加载。"
+    ],
+    "deliverables": [
+      "两阶段渲染 PR。",
+      "语言包预热与缓存策略说明。"
+    ],
+    "acceptance_criteria": [
+      "打字期间预览不阻塞；高亮替换无闪烁。",
+      "代码密集文档预览延迟 p95 < 250ms。"
+    ],
+    "context": "",
+    "prompt": "两阶段渲染与高亮\n- **Agent**: codex\n- **模式**: sequential\n- **描述**: 快速通道先渲染无高亮 HTML，精细通道异步替换高亮结果；语言包按需加载与预热。\n- **要求**:\n  - 高亮结果按块缓存（语言+哈希）；未命中语言用通用配色占位。\n  - 语言包预测与 idle 预热；Shiki/Onigasm 流式加载。\n- **交付物**:\n  - 两阶",
+    "execution_type": "llm_required",
+    "tool_name": null,
+    "tool_params": {}
+  },
+  {
+    "step_number": 8,
+    "phase": "预览 DOM Patch 与降 React 参与度",
+    "description": "块级容器用原生 DOM Patch（Range/DocumentFragment 或 morphdom），React 只管理块列表与 key。",
+    "agents": [
+      "codex"
+    ],
+    "parallel": false,
+    "requirements": [
+      "未变更块保持节点与事件稳定；仅针对变更块做原位替换。",
+      "提供度量（节点替换数、重排次数）。"
+    ],
+    "deliverables": [
+      "DOM Patch 实现 PR。",
+      "渲染开销对比报告。"
+    ],
+    "acceptance_criteria": [
+      "大文档重排次数与节点重建显著减少。",
+      "交互事件不丢失，无功能回归。"
+    ],
+    "context": "",
+    "prompt": "预览 DOM Patch 与降 React 参与度\n- **Agent**: codex\n- **模式**: sequential\n- **描述**: 块级容器用原生 DOM Patch（Range/DocumentFragment 或 morphdom），React 只管理块列表与 key。\n- **要求**:\n  - 未变更块保持节点与事件稳定；仅针对变更块做原位替换。\n  - 提供度量（节点",
+    "execution_type": "llm_required",
+    "tool_name": null,
+    "tool_params": {}
+  },
+  {
+    "step_number": 9,
+    "phase": "滚动同步与锚点定位",
+    "description": "建立编辑行号→预览块映射，采用“块顶 + 行内偏移插值”策略；渲染后用 ResizeObserver 校正。",
+    "agents": [
+      "codex"
+    ],
+    "parallel": false,
+    "requirements": [
+      "data-line/data-block 属性；scroll/wheel 监听器 passive + rAF 节流。",
+      "目录/搜索跳转次帧微调，误差<1行。"
+    ],
+    "deliverables": [
+      "滚动同步实现 PR。",
+      "精度测试与报告。"
+    ],
+    "acceptance_criteria": [
+      "锚点误差 ≤ 1 行；滚动流畅无抖动。",
+      "编辑驱动为主，预览驱动可配置。"
+    ],
+    "context": "",
+    "prompt": "滚动同步与锚点定位\n- **Agent**: codex\n- **模式**: sequential\n- **描述**: 建立编辑行号→预览块映射，采用“块顶 + 行内偏移插值”策略；渲染后用 ResizeObserver 校正。\n- **要求**:\n  - data-line/data-block 属性；scroll/wheel 监听器 passive + rAF 节流。\n  - 目录/搜索跳转次",
+    "execution_type": "llm_required",
+    "tool_name": null,
+    "tool_params": {}
+  },
+  {
+    "step_number": 10,
+    "phase": "启动优化（前端与 Tauri）",
+    "description": "前端代码分割与懒加载重模块；Tauri Rust 端重任务异步化与构建优化。",
+    "agents": [
+      "codex",
+      "gemini"
+    ],
+    "parallel": true,
+    "requirements": [
+      "首屏仅加载编辑器骨架；预览/高亮/扩展动态 import；Worker 独立 bundle 与持久缓存。",
+      "Rust 构建 lto/opt-level 优化；窗口显示后 spawn 重型初始化。"
+    ],
+    "deliverables": [
+      "前端启动优化 PR。",
+      "Tauri 构建与初始化优化 PR。"
+    ],
+    "acceptance_criteria": [
+      "冷启动（小文档）可交互 < 1s，白屏感降低。",
+      "包体积与首包加载时长下降≥30%。"
+    ],
+    "context": "",
+    "prompt": "启动优化（前端与 Tauri）\n- **Agent**: codex, gemini\n- **模式**: parallel\n- **描述**: 前端代码分割与懒加载重模块；Tauri Rust 端重任务异步化与构建优化。\n- **要求**:\n  - 首屏仅加载编辑器骨架；预览/高亮/扩展动态 import；Worker 独立 bundle 与持久缓存。\n  - Rust 构建 lto/opt-le",
+    "execution_type": "llm_required",
+    "tool_name": null,
+    "tool_params": {}
+  },
+  {
+    "step_number": 11,
+    "phase": "安全与 sanitize 统一",
+    "description": "在同一侧统一 sanitize（优先 Worker 或 Rust ammonia），启用 Trusted Types 与 CSP/COOP/COEP 配置。",
+    "agents": [
+      "claude",
+      "codex",
+      "gemini"
+    ],
+    "parallel": false,
+    "requirements": [
+      "单点 sanitize，主线程避免重复清洗；开启 Trusted Types。",
+      "若启用 SharedArrayBuffer，确保 COOP/COEP 正确。"
+    ],
+    "deliverables": [
+      "安全策略文档与实现 PR。",
+      "安全测试（XSS、CSP、TT）报告。"
+    ],
+    "acceptance_criteria": [
+      "通过安全用例与审计；性能无明显回归。"
+    ],
+    "context": "",
+    "prompt": "安全与 sanitize 统一\n- **Agent**: claude, codex, gemini\n- **模式**: sequential\n- **描述**: 在同一侧统一 sanitize（优先 Worker 或 Rust ammonia），启用 Trusted Types 与 CSP/COOP/COEP 配置。\n- **要求**:\n  - 单点 sanitize，主线程避免重复清洗；开启 ",
+    "execution_type": "llm_required",
+    "tool_name": null,
+    "tool_params": {}
+  },
+  {
+    "step_number": 12,
+    "phase": "可观测性、门槛与降级/恢复",
+    "description": "全链路埋点与性能面板；CI 自动化基准与门槛；降级与自恢复策略。",
+    "agents": [
+      "gemini",
+      "codex"
+    ],
+    "parallel": false,
+    "requirements": [
+      "UserTiming/PerformanceObserver 埋点 parse/highlight/render/apply_patch；长任务/CLS/FPS采集。",
+      "Playwright/Tauri 自动化测试与门槛：输入延迟 p95、预览延迟 p95、内存峰值、long tasks 比例。",
+      "降级模式（轻预览/仅当前块/无高亮）、Worker 自动重启。"
+    ],
+    "deliverables": [
+      "性能面板与数据报表。",
+      "CI 门禁与自动化测试集。"
+    ],
+    "acceptance_criteria": [
+      "未达标阻断发布；降级与恢复路径有效。",
+      "性能指标持续监控并可回溯。"
+    ],
+    "context": "",
+    "prompt": "可观测性、门槛与降级/恢复\n- **Agent**: gemini, codex\n- **模式**: sequential\n- **描述**: 全链路埋点与性能面板；CI 自动化基准与门槛；降级与自恢复策略。\n- **要求**:\n  - UserTiming/PerformanceObserver 埋点 parse/highlight/render/apply_patch；长任务/CLS/FPS采",
+    "execution_type": "llm_required",
+    "tool_name": null,
+    "tool_params": {}
+  },
+  {
+    "step_number": 13,
+    "phase": "灰度上线与特性开关",
+    "description": "为 Worker/增量解析/虚拟化等引入特性开关，按用户与文档规模灰度启用；收集真实数据。",
+    "agents": [
+      "claude",
+      "gemini"
+    ],
+    "parallel": false,
+    "requirements": [
+      "配置“性能优先/实时优先”选项；设备与文档规模自适应选择 content-visibility vs 虚拟列表。",
+      "上线后数据对比与反馈收集。"
+    ],
+    "deliverables": [
+      "特性开关与灰度策略 PR。",
+      "灰度阶段数据报告与调整建议。"
+    ],
+    "acceptance_criteria": [
+      "灰度期间稳定，无显著回退；指标达成后默认启用。"
+    ],
+    "context": "",
+    "prompt": "灰度上线与特性开关\n- **Agent**: claude, gemini\n- **模式**: sequential\n- **描述**: 为 Worker/增量解析/虚拟化等引入特性开关，按用户与文档规模灰度启用；收集真实数据。\n- **要求**:\n  - 配置“性能优先/实时优先”选项；设备与文档规模自适应选择 content-visibility vs 虚拟列表。\n  - 上线后数据对比与反馈",
+    "execution_type": "llm_required",
+    "tool_name": null,
+    "tool_params": {}
+  },
+  {
+    "step_number": 14,
+    "phase": "原生（Rust）解析/高亮评估与A/B",
+    "description": "评估 pulldown-cmark + syntect 在 Tauri 侧的端到端收益与一致性，进行受控 A/B。",
+    "agents": [
+      "claude",
+      "codex",
+      "gemini"
+    ],
+    "parallel": false,
+    "requirements": [
+      "与现有 Marked 渲染一致性校验；IPC 开销与序列化策略评估。",
+      "仅在大文档/代码密集场景灰度试用。"
+    ],
+    "deliverables": [
+      "原生管线原型 PR。",
+      "A/B 报告与决策建议。"
+    ],
+    "acceptance_criteria": [
+      "大文档下显著收益且一致性通过，方可逐步推广；否则保留为可选路径。"
+    ],
+    "context": "",
+    "prompt": "原生（Rust）解析/高亮评估与A/B\n- **Agent**: claude, codex, gemini\n- **模式**: sequential\n- **描述**: 评估 pulldown-cmark + syntect 在 Tauri 侧的端到端收益与一致性，进行受控 A/B。\n- **要求**:\n  - 与现有 Marked 渲染一致性校验；IPC 开销与序列化策略评估。\n  - 仅在大",
+    "execution_type": "llm_required",
+    "tool_name": null,
+    "tool_params": {}
+  }
+]

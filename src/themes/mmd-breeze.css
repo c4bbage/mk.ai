@@ -1,0 +1,203 @@
+/* ===== MMD Editor 微风主题（卡片式 720px 居中 + 实心标题块） ===== */
+.theme-mmd-breeze {
+  --color-text: #2c3e50;
+  --color-text-secondary: #5d6d7e;
+  --color-text-muted: #85929e;
+  --color-bg: #f6f3ff;
+  --color-bg-card: #ffffff;
+  --color-bg-secondary: #f8f9fa;
+  --color-bg-code: #f6f8fa;
+  --color-bg-pre: #f6f8fa;
+  --color-border: #e1e4e8;
+  --color-border-medium: #d1d5da;
+  --color-link: #312c20;
+  --color-accent: #312c20;
+  --color-accent-60: color-mix(in oklab, var(--color-accent) 60%, #000);
+  --color-accent-70: color-mix(in oklab, var(--color-accent) 70%, #000);
+  --color-accent-35: color-mix(in oklab, var(--color-accent) 35%, #000);
+  --color-accent-6: color-mix(in oklab, var(--color-accent) 6%, #fff);
+  --color-accent-4: color-mix(in oklab, var(--color-accent) 4%, #fff);
+  --color-accent-rgb: 49, 44, 32;
+}
+
+.theme-mmd-breeze .markdown-body {
+  background: var(--color-bg);
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(var(--color-accent-rgb), 0.08);
+  color: var(--color-text);
+}
+
+/* h1: 实心 pill/badge */
+.theme-mmd-breeze .markdown-body h1 {
+  display: inline-block;
+  font-size: 2em;
+  font-weight: 700;
+  color: #fff;
+  background: var(--color-accent);
+  padding: 8px 24px;
+  border-radius: 12px;
+  margin: 16px auto 24px;
+  box-shadow: 0 8px 20px rgba(var(--color-accent-rgb), 0.22);
+  text-align: center;
+  border-bottom: none;
+  padding-bottom: 8px;
+}
+
+.theme-mmd-breeze .markdown-body h1::after {
+  content: none;
+}
+
+.theme-mmd-breeze .markdown-body h1 ~ *,
+.theme-mmd-breeze .markdown-body h1 + * {
+  clear: both;
+}
+
+/* h2: 实心竖条 */
+.theme-mmd-breeze .markdown-body h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  position: relative;
+  padding-left: 16px;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.theme-mmd-breeze .markdown-body h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 6px;
+  border-radius: 3px;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-accent) 20%, #fff);
+}
+
+/* h3: 较细竖条 */
+.theme-mmd-breeze .markdown-body h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  position: relative;
+  padding-left: 14px;
+}
+
+.theme-mmd-breeze .markdown-body h3::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--color-accent-60);
+}
+
+/* h4: 左侧细线 */
+.theme-mmd-breeze .markdown-body h4 {
+  font-size: 1.1em;
+  font-weight: 600;
+  border-left: 3px solid var(--color-accent-35);
+  padding-left: 12px;
+}
+
+.theme-mmd-breeze .markdown-body h5 { font-size: 1em; }
+.theme-mmd-breeze .markdown-body h6 { font-size: 0.9em; color: var(--color-text-secondary); }
+
+.theme-mmd-breeze .markdown-body p {
+  margin: 1.2em 0;
+  line-height: 1.7;
+}
+
+.theme-mmd-breeze .markdown-body strong {
+  font-weight: 600;
+  color: var(--color-accent-70);
+}
+
+.theme-mmd-breeze .markdown-body ul,
+.theme-mmd-breeze .markdown-body ol {
+  margin: 1.1em 0;
+  padding-left: 1.4em;
+}
+
+.theme-mmd-breeze .markdown-body li::marker {
+  color: var(--color-accent-70);
+}
+
+.theme-mmd-breeze .markdown-body blockquote {
+  border-left: 3px solid var(--color-border-medium);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-style: normal;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.theme-mmd-breeze .markdown-body code {
+  background: var(--color-bg-code);
+  color: #24292e;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.88em;
+}
+
+.theme-mmd-breeze .markdown-body pre {
+  background: var(--color-bg-pre);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.9em 1em;
+}
+
+.theme-mmd-breeze .markdown-body pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.theme-mmd-breeze .markdown-body a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.theme-mmd-breeze .markdown-body a:hover {
+  text-decoration: underline;
+}
+
+.theme-mmd-breeze .markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.theme-mmd-breeze .markdown-body thead th {
+  background: var(--color-accent-6);
+}
+
+.theme-mmd-breeze .markdown-body th,
+.theme-mmd-breeze .markdown-body td {
+  border-top: 1px solid var(--color-border);
+  padding: 10px 14px;
+  text-align: left;
+}
+
+.theme-mmd-breeze .markdown-body hr {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-border), transparent);
+  border: none;
+}
+
+.theme-mmd-breeze .markdown-body img {
+  display: block;
+  margin: 1rem auto;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}

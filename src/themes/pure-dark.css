@@ -1,0 +1,73 @@
+.theme-pure-dark {
+  --color-text: #e6edf3;
+  --color-text-secondary: #9198a1;
+  --color-text-muted: #6e7681;
+  --color-bg: #0d1117;
+  --color-bg-secondary: #161b22;
+  --color-bg-code: #1c2333;
+  --color-bg-pre: #161b22;
+  --color-border: #30363d;
+  --color-link: #58a6ff;
+  --color-accent: #58a6ff;
+}
+
+.theme-pure-dark .markdown-body {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.theme-pure-dark h1,
+.theme-pure-dark h2 {
+  border-bottom-color: var(--color-border);
+}
+
+.theme-pure-dark h1, .theme-pure-dark h2, .theme-pure-dark h3,
+.theme-pure-dark h4, .theme-pure-dark h5, .theme-pure-dark h6 {
+  color: var(--color-text);
+}
+
+.theme-pure-dark a {
+  color: var(--color-link);
+}
+
+.theme-pure-dark blockquote {
+  border-left-color: var(--color-accent);
+  color: var(--color-text-muted);
+  background: var(--color-bg-secondary);
+}
+
+.theme-pure-dark code {
+  background: var(--color-bg-code);
+  color: #f0c674;
+}
+
+.theme-pure-dark pre {
+  background: var(--color-bg-pre);
+  border: 1px solid var(--color-border);
+}
+
+.theme-pure-dark pre code {
+  background: transparent;
+  color: #c9d1d9;
+}
+
+.theme-pure-dark table th {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border);
+}
+
+.theme-pure-dark table td {
+  border-color: var(--color-border);
+}
+
+.theme-pure-dark hr {
+  border-color: var(--color-border);
+}
+
+.theme-pure-dark img {
+  opacity: 0.9;
+}
+
+.theme-pure-dark ::selection {
+  background: rgba(88, 166, 255, 0.3);
+}

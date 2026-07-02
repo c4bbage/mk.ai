@@ -6,6 +6,8 @@
 import { parseMarkdownToBlocks, type MarkdownBlock } from '../lib/markdown-blocks';
 import { parseMarkdown as parseMarkdownFull } from '../lib/markdown';
 import { marked, Renderer } from 'marked';
+import { sanitizeMarkdownHtml } from '../lib/sanitize';
+import { protectSpecialBlocks, restoreSpecialBlocks } from '../lib/placeholders';
 
 // naive code fence language detection
 function detectCodeLanguage(content: string): string | undefined {
@@ -28,9 +30,11 @@ function simpleHash(str: string): string {
 }
 
 export interface PipelineRequest {
-  type: 'render';
+  type: 'render' | 'highlight';
   id: string; // sequence id
   content: string;
+  blockId?: string; // for highlight requests
+  language?: string; // for highlight requests
 }
 
 export interface BlockRender {
@@ -54,41 +58,8 @@ export interface PipelineResponse {
 
 /**
  * Minimal sanitizer for worker-side sanitization
- * - Neutralize <script> tags
- * - Remove on* event handler attributes
- * - Strip javascript: URLs in href/src
+ * Uses the shared sanitize-html config from sanitize.ts
  */
-import sanitizeHtmlLib from 'sanitize-html'
-
-function sanitizeHtml(html: string): string {
-  try {
-    return sanitizeHtmlLib(html, {
-      allowedTags: [
-        'p','h1','h2','h3','h4','h5','h6','ul','ol','li','code','pre','blockquote','em','strong','a','img','table','thead','tbody','tr','th','td','span','div','br'
-      ],
-      allowedAttributes: {
-        a: ['href','title','target','rel'],
-        img: ['src','alt','title'],
-        div: ['class','data-code'],
-        span: ['class','data-tex']
-      },
-      allowedSchemes: ['http', 'https', 'mailto', 'data'],
-      allowVulnerableTags: false,
-      transformTags: {
-        'a': (tagName: string, attribs: Record<string, string>) => {
-          const href = attribs.href || ''
-          if (/^\s*javascript:/i.test(href)) {
-            return { tagName: 'a', attribs: { ...attribs, href: '#' } }
-          }
-          return { tagName, attribs }
-        }
-      }
-    })
-  } catch {
-    // Fallback: return original HTML if sanitize-html fails in Worker
-    return html
-  }
-}
 
 function handleRender(id: string, content: string) {
   const t0 = performance.now();
@@ -96,52 +67,31 @@ function handleRender(id: string, content: string) {
     const blocks = parseMarkdownToBlocks(content);
     let cursor = 0;
 
+    // Reuse a single Renderer instance with custom image/link rendering
+    // matching markdown.ts to keep virtual preview consistent
+    const fastRenderer = new Renderer();
+    fastRenderer.image = ({ href, title, text }) => {
+      const titleAttr = title ? ` title="${title}"` : '';
+      return `<img src="${href}" alt="${text || ''}"${titleAttr} loading="lazy" decoding="async" class="md-image" />`;
+    };
+    fastRenderer.link = ({ href, title, text }) => {
+      const titleAttr = title ? ` title="${title}"` : '';
+      return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
+    };
+
     const rendered: BlockRender[] = blocks.map((block) => {
       const blockLines = block.content.split('\n').length;
       const startLine = cursor;
       const endLine = cursor + blockLines - 1;
       cursor = endLine + 1;
 
-      const fastRenderer = new Renderer();
-
-      const mathBlocks: string[] = [];
-      const mermaidBlocks: string[] = [];
-      const codeBlocks: string[] = [];
-
-      let processed = block.content;
-      processed = processed.replace(/```mermaid\n([\s\S]*?)```/g, (_, code) => {
-        mermaidBlocks.push(`<div class=\"mermaid-block\" data-code=\"${encodeURIComponent(code.trim())}\"></div>`);
-        return `%%MERMAID_BLOCK_${mermaidBlocks.length - 1}%%`;
-      });
-      processed = processed.replace(/```[a-zA-Z0-9_-]*\n([\s\S]*?)```/g, (m) => {
-        codeBlocks.push(m);
-        return `%%CODE_BLOCK_${codeBlocks.length - 1}%%`;
-      });
-      processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
-        mathBlocks.push(`<div class=\"math-block\" data-tex=\"${encodeURIComponent(tex.trim())}\"></div>`);
-        return `%%MATH_BLOCK_${mathBlocks.length - 1}%%`;
-      });
-      processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, tex) => {
-        mathBlocks.push(`<span class=\"math-inline\" data-tex=\"${encodeURIComponent(tex.trim())}\"></span>`);
-        return `%%MATH_BLOCK_${mathBlocks.length - 1}%%`;
-      });
-      codeBlocks.forEach((blockSrc, i) => {
-        processed = processed.replace(`%%CODE_BLOCK_${i}%%`, blockSrc);
-      });
+      const { processed, mathBlocks, mermaidBlocks } = protectSpecialBlocks(block.content);
 
       const rawHtmlFast = marked.parse(processed, { renderer: fastRenderer, gfm: true, breaks: true }) as string;
 
-      let restoredHtml = rawHtmlFast;
-      mathBlocks.forEach((placeholder, i) => {
-        restoredHtml = restoredHtml.replace(`%%MATH_BLOCK_${i}%%`, placeholder);
-        restoredHtml = restoredHtml.replace(`<p>%%MATH_BLOCK_${i}%%</p>`, placeholder);
-      });
-      mermaidBlocks.forEach((placeholder, i) => {
-        restoredHtml = restoredHtml.replace(`%%MERMAID_BLOCK_${i}%%`, placeholder);
-        restoredHtml = restoredHtml.replace(`<p>%%MERMAID_BLOCK_${i}%%</p>`, placeholder);
-      });
+      const restoredHtml = restoreSpecialBlocks(rawHtmlFast, mathBlocks, mermaidBlocks);
 
-      const safeHtmlFast = sanitizeHtml(restoredHtml);
+      const safeHtmlFast = sanitizeMarkdownHtml(restoredHtml);
       const language = (block.type === 'code' && detectCodeLanguage(block.content)) || undefined;
       const contentHash = simpleHash(block.content);
 
@@ -149,7 +99,7 @@ function handleRender(id: string, content: string) {
         id: block.id,
         type: block.type,
         content: block.content,
-        level: (block as any).level,
+        level: block.level,
         html: safeHtmlFast,
         startLine,
         endLine,
@@ -184,7 +134,7 @@ function handleHighlight(id: string, blockId: string, content: string, _language
   const t0 = performance.now();
   try {
     const htmlFull = parseMarkdownFull(content);
-    const safeHtml = sanitizeHtml(htmlFull);
+    const safeHtml = sanitizeMarkdownHtml(htmlFull);
     const contentHash = simpleHash(content);
     self.postMessage({
       type: 'highlighted',
@@ -196,7 +146,7 @@ function handleHighlight(id: string, blockId: string, content: string, _language
     });
   } catch (e) {
     console.warn('[PipelineWorker] highlight failed, fallback to fast HTML:', e);
-    const htmlFallback = sanitizeHtml(marked.parse(content) as string);
+    const htmlFallback = sanitizeMarkdownHtml(marked.parse(content) as string);
     self.postMessage({
       type: 'highlighted',
       id,
@@ -209,7 +159,7 @@ function handleHighlight(id: string, blockId: string, content: string, _language
 }
 
 // Unified dispatcher
-self.addEventListener('message', (event: MessageEvent<any>) => {
+self.addEventListener('message', (event: MessageEvent) => {
   const data = event.data || {};
   switch (data.type) {
     case 'render':

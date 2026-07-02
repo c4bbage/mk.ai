@@ -1,0 +1,185 @@
+/* ===== 暗色模式主题变量覆盖 ===== */
+[data-color-mode="dark"] {
+  /* GitHub */
+  .theme-github {
+    --color-text: #e6edf3;
+    --color-text-secondary: #9198a1;
+    --color-text-muted: #6e7681;
+    --color-bg: #0d1117;
+    --color-bg-secondary: #161b22;
+    --color-bg-code: rgba(240, 246, 252, 0.1);
+    --color-bg-pre: #161b22;
+    --color-border: #30363d;
+    --color-link: #58a6ff;
+    --color-accent: #58a6ff;
+  }
+
+  .theme-github .markdown-body {
+    background: #0d1117;
+  }
+
+  .theme-github code {
+    background: rgba(240, 246, 252, 0.1);
+    color: #e6edf3;
+  }
+
+  .theme-github pre {
+    background: #161b22;
+    border-color: #30363d;
+  }
+
+  /* 微信-优雅橙 */
+  .theme-wechat-elegant {
+    --color-text: #e0e0e0;
+    --color-text-secondary: #b0b0b0;
+    --color-text-muted: #888;
+    --color-bg: #1e1e1e;
+    --color-bg-secondary: #2a2a2a;
+    --color-bg-code: #3a2222;
+    --color-bg-pre: #2b2b2b;
+    --color-border: #404040;
+    --color-link: #ff8c47;
+    --color-accent: #ff6827;
+  }
+
+  .theme-wechat-elegant .markdown-body {
+    background: #1e1e1e;
+  }
+
+  .theme-wechat-elegant blockquote {
+    background: #2a2a2a;
+  }
+
+  .theme-wechat-elegant code {
+    background: #3a2222;
+    color: #ff8c80;
+  }
+
+  /* 微信-清新绿 */
+  .theme-wechat-green {
+    --color-text: #e0e0e0;
+    --color-text-secondary: #b0b0b0;
+    --color-text-muted: #888;
+    --color-bg: #1e1e1e;
+    --color-bg-secondary: #1a2a1a;
+    --color-bg-code: #1a2a1a;
+    --color-bg-pre: #1e1e1e;
+    --color-border: #384838;
+    --color-link: #2bd17e;
+    --color-accent: #07c160;
+  }
+
+  .theme-wechat-green .markdown-body {
+    background: #1e1e1e;
+  }
+
+  .theme-wechat-green code {
+    background: #1a2a1a;
+    color: #5cd98a;
+  }
+
+  .theme-wechat-green pre {
+    border-color: #384838;
+  }
+
+  /* 微信-科技蓝 */
+  .theme-wechat-blue {
+    --color-text: #d0d8e0;
+    --color-text-secondary: #a0aab0;
+    --color-text-muted: #7f8c8d;
+    --color-bg: #1a1e24;
+    --color-bg-secondary: #232830;
+    --color-bg-code: #1a2438;
+    --color-bg-pre: #263238;
+    --color-border: #364048;
+    --color-link: #5aa7ff;
+    --color-accent: #409eff;
+  }
+
+  .theme-wechat-blue .markdown-body {
+    background: #1a1e24;
+  }
+
+  .theme-wechat-blue blockquote {
+    background: #232830;
+  }
+
+  .theme-wechat-blue code {
+    background: #1a2438;
+    border-color: #2a3850;
+  }
+
+  /* 纯暗 (dark mode override for light variant) */
+  .theme-pure-dark {
+    --color-text: #e6edf3;
+    --color-text-secondary: #9198a1;
+    --color-text-muted: #6e7681;
+    --color-bg: #0d1117;
+    --color-bg-secondary: #161b22;
+    --color-bg-code: #1c2333;
+    --color-bg-pre: #161b22;
+    --color-border: #30363d;
+    --color-link: #58a6ff;
+    --color-accent: #58a6ff;
+  }
+
+  [data-color-mode="dark"] .theme-pure-dark .markdown-body {
+    background: #0d1117;
+  }
+
+  /* 暖纸 (dark mode) */
+  .theme-newsprint {
+    --color-text: #d4c8b8;
+    --color-text-secondary: #b0a490;
+    --color-text-muted: #8a7e72;
+    --color-bg: #1a1815;
+    --color-bg-secondary: #2a2620;
+    --color-bg-code: #2a2620;
+    --color-bg-pre: #2a2620;
+    --color-border: #3a342c;
+    --color-link: #e87a6a;
+    --color-accent: #e87a6a;
+  }
+
+  [data-color-mode="dark"] .theme-newsprint .markdown-body {
+    background: #1a1815;
+    color: #d4c8b8;
+  }
+
+  /* 薰衣草 (dark mode) */
+  .theme-lavender {
+    --color-text: #c8c0e0;
+    --color-text-secondary: #a098c0;
+    --color-text-muted: #7a72a0;
+    --color-bg: #1a1828;
+    --color-bg-secondary: #242138;
+    --color-bg-code: #242138;
+    --color-bg-pre: #242138;
+    --color-border: #3a3458;
+    --color-link: #a080e0;
+    --color-accent: #a080e0;
+  }
+
+  [data-color-mode="dark"] .theme-lavender .markdown-body {
+    background: #1a1828;
+    color: #c8c0e0;
+  }
+
+  /* ===== highlight.js 暗色覆盖 ===== */
+  .hljs {
+    color: #c9d1d9;
+    background: #161b22;
+  }
+  .hljs-comment, .hljs-quote { color: #8b949e; }
+  .hljs-keyword, .hljs-selector-tag, .hljs-deletion { color: #ff7b72; }
+  .hljs-string, .hljs-regexp, .hljs-addition { color: #a5d6ff; }
+  .hljs-number, .hljs-literal { color: #79c0ff; }
+  .hljs-title, .hljs-section, .hljs-name { color: #d2a8ff; }
+  .hljs-attribute, .hljs-variable, .hljs-template-variable { color: #ffa657; }
+  .hljs-type, .hljs-built_in { color: #79c0ff; }
+  .hljs-meta { color: #8b949e; }
+  .hljs-tag { color: #7ee787; }
+  .hljs-symbol, .hljs-bullet, .hljs-link { color: #d2a8ff; }
+  .hljs-emphasis { font-style: italic; }
+  .hljs-strong { font-weight: bold; }
+}

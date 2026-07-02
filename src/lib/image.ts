@@ -1,6 +1,17 @@
 import type { ImageStorageStrategy } from '../types';
 import { isTauri } from './file';
 
+/** Track object URLs created by the 'url' strategy for cleanup */
+const createdObjectUrls = new Set<string>();
+
+/** Revoke all tracked object URLs (call on file close or content replacement) */
+export function revokeObjectUrls(): void {
+  for (const url of createdObjectUrls) {
+    URL.revokeObjectURL(url);
+  }
+  createdObjectUrls.clear();
+}
+
 /**
  * 将文件转换为 Base64 Data URL
  */
@@ -90,16 +101,6 @@ export function getImagesDir(filePath: string): string {
 }
 
 /**
- * 获取相对路径
- */
-export function getRelativePath(_fromDir: string, toPath: string): string {
-  // 简化处理：假设在同一目录下
-  const fileName = toPath.split(/[/\\]/).pop() || toPath;
-  const assetsDir = toPath.split(/[/\\]/).slice(-2, -1)[0] || '';
-  return `./${assetsDir}/${fileName}`;
-}
-
-/**
  * 处理图片并返回 Markdown 图片语法
  * @param file 图片文件
  * @param strategy 存储策略
@@ -160,13 +161,33 @@ export async function processImage(
       return `![${altText}](${dataUrl})`;
     }
     
+    case 'absolute': {
+      // 绝对路径：保存到文档所在目录，引用绝对路径
+      if (!documentPath) {
+        console.warn('Document not saved, falling back to base64');
+        const dataUrl = await fileToBase64(file);
+        return `![${altText}](${dataUrl})`;
+      }
+
+      if (isTauri()) {
+        const saved = await saveImageToLocal(file, documentPath, 'images', newFileName);
+        if (saved) {
+          const dir = documentPath.split(/[/\\]/).slice(0, -1).join('/');
+          return `![${altText}](${dir}/${newFileName})`;
+        }
+      }
+
+      const dataUrl = await fileToBase64(file);
+      return `![${altText}](${dataUrl})`;
+    }
+
     case 'url': {
       // 临时 URL（仅当前会话有效）
       const url = URL.createObjectURL(file);
+      createdObjectUrls.add(url);
       return `![${altText}](${url})`;
     }
-    
-    case 'absolute':
+
     default: {
       // 默认使用 base64
       const dataUrl = await fileToBase64(file);
@@ -230,12 +251,16 @@ export async function extractAndSaveImages(
   
   // 匹配 Base64 图片
   const base64Regex = /!\[([^\]]*)\]\((data:image\/[^;]+;base64,[^)]+)\)/g;
-  let newContent = content;
+  let result = '';
+  let lastIndex = 0;
   let match;
   let index = 0;
   
   while ((match = base64Regex.exec(content)) !== null) {
     const [fullMatch, altText, dataUrl] = match;
+    // Append content between matches
+    result += content.slice(lastIndex, match.index);
+    lastIndex = match.index + fullMatch.length;
     
     try {
       // 解析 Base64
@@ -268,15 +293,18 @@ export async function extractAndSaveImages(
         } else {
           relativePath = `./images/${fileName}`;
         }
-        
-        newContent = newContent.replace(fullMatch, `![${altText}](${relativePath})`);
+        result += `![${altText}](${relativePath})`;
+      } else {
+        result += fullMatch;
       }
       
       index++;
     } catch (error) {
       console.error(`Failed to extract image ${index}:`, error);
+      result += fullMatch;
     }
   }
   
-  return newContent;
+  result += content.slice(lastIndex);
+  return result;
 }

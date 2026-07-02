@@ -5,10 +5,13 @@
  */
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { perfMark, perfMeasure } from '../lib/performance';
+import { parseMarkdownToBlocks, type MarkdownBlock } from '../lib/markdown-blocks';
+import { parseMarkdown } from '../lib/markdown';
+import { sanitizeMarkdownHtml } from '../lib/sanitize';
 
 export interface RenderBlock {
   id: string;
-  type: 'heading' | 'paragraph' | 'code' | 'table' | 'list' | 'blockquote' | 'hr' | 'math' | 'mermaid' | 'image' | 'html';
+  type: 'heading' | 'paragraph' | 'code' | 'table' | 'list' | 'blockquote' | 'hr' | 'math' | 'mermaid' | 'image';
   html: string;
   startLine: number;
   endLine: number;
@@ -49,13 +52,25 @@ export function usePipelineWorker({ content }: UsePipelineWorkerOptions): UsePip
   const [renderTime, setRenderTime] = useState(0);
 
   // Shared message handler (avoids duplication between init and restart)
-  const handleWorkerMessage = useCallback((event: MessageEvent<any>) => {
+  const prevBlocksRef = useRef<RenderBlock[]>([]);
+  const handleWorkerMessage = useCallback((event: MessageEvent) => {
     const data = event.data || {};
     const { type } = data;
     if (type === 'rendered') {
       const { id, blocks: renderedBlocks, renderTime: rt } = data;
       if (id === requestIdRef.current.toString()) {
-        setBlocks(renderedBlocks || []);
+        // Incremental merge: preserve html for blocks whose contentHash hasn't changed
+        const prev = prevBlocksRef.current;
+        const prevByHash = new Map<string, RenderBlock>();
+        for (const b of prev) {
+          if (b.contentHash) prevByHash.set(b.contentHash, b);
+        }
+        const merged = (renderedBlocks || []).map((nb: RenderBlock) => {
+          const old = nb.contentHash ? prevByHash.get(nb.contentHash) : undefined;
+          return old && old.html ? { ...nb, html: old.html } : nb;
+        });
+        prevBlocksRef.current = merged;
+        setBlocks(merged);
         setRenderTime(rt || 0);
         perfMark('worker_parse_end');
         const parseMs = perfMeasure('worker_parse', 'worker_parse_start', 'worker_parse_end');
@@ -72,18 +87,24 @@ export function usePipelineWorker({ content }: UsePipelineWorkerOptions): UsePip
     }
   }, []);
 
+  // Create a worker with error/message handlers attached
+  const createWorker = useCallback(() => {
+    const worker = new Worker(new URL('../workers/pipeline.worker.ts', import.meta.url), { type: 'module' });
+    worker.onerror = (e) => {
+      console.warn('[usePipelineWorker] worker error, restarting...', e);
+      try { worker.terminate(); } catch { /* ignore */ }
+      if (workerRef.current === worker) workerRef.current = null;
+      setIsRendering(false);
+    };
+    worker.onmessage = handleWorkerMessage;
+    return worker;
+  }, [handleWorkerMessage]);
+
   // Init worker once
   useEffect(() => {
     if (!workerRef.current) {
       try {
-        workerRef.current = new Worker(new URL('../workers/pipeline.worker.ts', import.meta.url), { type: 'module' });
-        workerRef.current.onerror = (e) => {
-          console.warn('[usePipelineWorker] worker error, restarting...', e);
-          try { workerRef.current?.terminate(); } catch {}
-          workerRef.current = null;
-          setIsRendering(false);
-        };
-        workerRef.current.onmessage = handleWorkerMessage;
+        workerRef.current = createWorker();
       } catch (e) {
         console.warn('[usePipelineWorker] failed to init worker, falling back to main thread:', e);
       }
@@ -95,15 +116,13 @@ export function usePipelineWorker({ content }: UsePipelineWorkerOptions): UsePip
       if (workerRef.current) workerRef.current.terminate();
       workerRef.current = null;
     };
-  }, [handleWorkerMessage]);
+  }, [createWorker]);
 
   // Debounced render dispatch — avoids flooding the worker on rapid keystrokes
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!content) {
-      setBlocks([]);
-      setRenderTime(0);
       lastContentRef.current = '';
       return;
     }
@@ -128,49 +147,43 @@ export function usePipelineWorker({ content }: UsePipelineWorkerOptions): UsePip
         watchdogRef.current = window.setTimeout(() => {
           if (requestIdRef.current.toString() === id) {
             console.warn('[usePipelineWorker] render timeout, restarting worker...');
-            try { workerRef.current?.terminate(); } catch {}
-            workerRef.current = new Worker(new URL('../workers/pipeline.worker.ts', import.meta.url), { type: 'module' });
-            workerRef.current.onmessage = handleWorkerMessage;
+            try { workerRef.current?.terminate(); } catch { /* ignore */ }
+            workerRef.current = createWorker();
             workerRef.current.postMessage({ type: 'render', id, content });
           }
         }, 5000) as unknown as number;
       } else {
         // Fallback: main thread render
         setIsRendering(true);
-        (async () => {
-          try {
-            const { parseMarkdownToBlocks } = await import('../lib/markdown-blocks');
-            const { parseMarkdown } = await import('../lib/markdown');
-            const { default: sanitizeHtml } = await import('sanitize-html');
-            const t0 = performance.now();
-            const blocksRaw = parseMarkdownToBlocks(content);
-            let cursor = 0;
-            const rendered = blocksRaw.map((block: any) => {
-              const blockLines = block.content.split('\n').length;
-              const startLine = cursor;
-              const endLine = cursor + blockLines - 1;
-              cursor = endLine + 1;
-              const rawHtml = parseMarkdown(block.content);
-              const safeHtml = sanitizeHtml(rawHtml);
-              return { id: block.id, type: block.type, html: safeHtml, startLine, endLine } as RenderBlock;
-            });
-            setBlocks(rendered);
-            setRenderTime(performance.now() - t0);
-          } catch (e) {
-            console.error('[usePipelineWorker] main-thread fallback failed:', e);
-            setBlocks([]);
-            setRenderTime(0);
-          } finally {
-            setIsRendering(false);
-          }
-        })();
+        try {
+          const t0 = performance.now();
+          const blocksRaw = parseMarkdownToBlocks(content);
+          let cursor = 0;
+          const rendered = blocksRaw.map((block: MarkdownBlock) => {
+            const blockLines = block.content.split('\n').length;
+            const startLine = cursor;
+            const endLine = cursor + blockLines - 1;
+            cursor = endLine + 1;
+            const rawHtml = parseMarkdown(block.content);
+            const safeHtml = sanitizeMarkdownHtml(rawHtml);
+            return { id: block.id, type: block.type, html: safeHtml, startLine, endLine } as RenderBlock;
+          });
+          setBlocks(rendered);
+          setRenderTime(performance.now() - t0);
+        } catch (e) {
+          console.error('[usePipelineWorker] main-thread fallback failed:', e);
+          setBlocks([]);
+          setRenderTime(0);
+        } finally {
+          setIsRendering(false);
+        }
       }
     }, delay) as unknown as number;
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [content, handleWorkerMessage]);
+  }, [content, createWorker]);
 
   const requestHighlight = useCallback((block: RenderBlock) => {
     const id = requestIdRef.current.toString();
@@ -186,5 +199,10 @@ export function usePipelineWorker({ content }: UsePipelineWorkerOptions): UsePip
     }
   }, []);
 
-  return { blocks, isRendering, renderTime, requestHighlight };
+  return {
+    blocks: content ? blocks : [],
+    isRendering: content ? isRendering : false,
+    renderTime: content ? renderTime : 0,
+    requestHighlight,
+  };
 }

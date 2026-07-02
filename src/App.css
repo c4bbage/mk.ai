@@ -17,135 +17,200 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ===== App 布局 ===== */
+/* ===== Tab Bar ===== */
+.tab-bar {
+  flex-shrink: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 8px;
+  background: rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  overflow-x: auto;
+  overflow-y: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tab-bar::-webkit-scrollbar {
+  height: 0;
+}
+
+.tab-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px 0 12px;
+  margin: 0 1px;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+  max-width: 200px;
+}
+
+.tab-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.tab-item.active {
+  background: #fff;
+  color: #24292e;
+  border-bottom: 2px solid #667eea;
+}
+
+.tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.3);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.tab-item:hover .tab-close,
+.tab-item.active .tab-close {
+  opacity: 1;
+}
+
+.tab-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: rgba(0, 0, 0, 0.7);
+}
+
+[data-color-mode="dark"] .tab-bar {
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-color-mode="dark"] .tab-item {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+[data-color-mode="dark"] .tab-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+[data-color-mode="dark"] .tab-item.active {
+  background: #1e1e1e;
+  color: #e6edf3;
+}
+
+[data-color-mode="dark"] .tab-close {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+[data-color-mode="dark"] .tab-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ===== App 布局 (Typora-style: no toolbar, full-screen) ===== */
 .app {
   display: flex;
   flex-direction: column;
   height: 100%;
   width: 100%;
-  
-  /* iOS 风格渐变背景 */
-  background: linear-gradient(
-    180deg,
-    #e8ecf4 0%,
-    #d4dbe8 50%,
-    #c8d0e0 100%
-  );
+  background: #ffffff;
+}
+
+.app-typora {
+  /* Clean white background, no gradient — like Typora */
+  background: #ffffff;
 }
 
 .app-content {
   flex: 1;
   display: flex;
-  flex-direction: row; /* 确保横向排列 */
+  flex-direction: row;
   overflow: hidden;
-  padding: 16px;
-  gap: 16px;
+  gap: 0;
 }
 
 /* ===== 文件树面板 ===== */
 .file-tree-panel {
-  width: 220px;
+  width: 240px;
   flex-shrink: 0;
-
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 16px;
-
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-
+  background: #f7f7f8;
+  border-right: 1px solid #e2e2e4;
   overflow: hidden;
 }
 
 /* ===== 大纲面板 ===== */
 .outline-panel {
-  width: 200px;
+  width: 220px;
   flex-shrink: 0;
-  
-  /* 液态玻璃效果 */
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 16px;
-  
-  box-shadow: 
-    0 4px 16px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  
+  background: #f7f7f8;
+  border-right: 1px solid #e2e2e4;
   overflow: hidden;
 }
 
-/* ===== 编辑器面板 - 液态玻璃卡片 ===== */
+/* ===== 编辑器面板 ===== */
 .editor-panel {
   flex: 1;
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  
-  /* 液态玻璃效果 */
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 20px;
-  
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    0 2px 8px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  
+  background: #ffffff;
   overflow: hidden;
 }
 
-/* ===== 预览面板 - 液态玻璃卡片 ===== */
+/* ===== 预览面板 ===== */
 .preview-panel {
   flex: 1;
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  
-  /* 液态玻璃效果 */
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 20px;
-  
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    0 2px 8px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
-  
+  background: #ffffff;
+  border-left: 1px solid #e2e2e4;
   overflow: hidden;
 }
 
-/* ===== 分隔线 - 透明 ===== */
+/* ===== 分隔线 ===== */
 .panel-divider {
   width: 0;
-  cursor: col-resize;
 }
 
-/* ===== 单面板模式 ===== */
-.editor-panel:only-child,
-.preview-panel:only-child {
-  max-width: 1200px;
+/* ===== 单面板模式: 居中内容 (Typora-style max-width) ===== */
+.editor-panel:only-child {
+  max-width: 900px;
   margin: 0 auto;
+  width: 100%;
 }
 
-/* ===== 滚动条 - iOS 风格 ===== */
+.preview-panel:only-child {
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+  border-left: none;
+}
+
+/* ===== 滚动条 ===== */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -153,66 +218,107 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.12);
   border-radius: 10px;
-  border: 2px solid transparent;
-  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
-  background-clip: content-box;
+  background: rgba(0, 0, 0, 0.2);
 }
 
 /* ===== 选中文本样式 ===== */
 ::selection {
-  background: rgba(102, 126, 234, 0.3);
+  background: rgba(102, 126, 234, 0.2);
 }
 
-/* ===== 响应式布局 - 仅在非常小的屏幕才变为纵向 ===== */
+/* ===== 响应式布局 ===== */
 @media (max-width: 600px) {
   .app-content {
     flex-direction: column;
-    padding: 12px;
-    gap: 12px;
-  }
-
-  .editor-panel,
-  .preview-panel {
-    border-radius: 16px;
-    min-height: 200px;
   }
 
   .panel-divider {
     width: 100%;
     height: 0;
-    cursor: row-resize;
+  }
+
+  .file-tree-panel,
+  .outline-panel {
+    width: 100%;
+    height: 200px;
+    border-right: none;
+    border-bottom: 1px solid #e2e2e4;
   }
 }
 
 /* ===== 暗色模式适配 ===== */
-@media (prefers-color-scheme: dark) {
-  .app {
-    background: linear-gradient(
-      180deg,
-      #1c1c2e 0%,
-      #2d2d44 50%,
-      #1c1c2e 100%
-    );
-  }
+[data-color-mode="dark"] .app {
+  background: #1e1e1e;
+}
 
-  .editor-panel {
-    background: rgba(45, 45, 68, 0.8);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
+[data-color-mode="dark"] .editor-panel {
+  background: #1e1e1e;
+}
 
-  .preview-panel {
-    background: rgba(45, 45, 68, 0.9);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
+[data-color-mode="dark"] .preview-panel {
+  background: #1e1e1e;
+  border-left-color: #3a3a3a;
+}
 
-  .file-tree-panel {
-    background: rgba(45, 45, 68, 0.8);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
+[data-color-mode="dark"] .file-tree-panel,
+[data-color-mode="dark"] .outline-panel {
+  background: #252526;
+  border-right-color: #3a3a3a;
+}
+
+/* ===== 底部状态栏 ===== */
+.status-bar {
+  flex-shrink: 0;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background: rgba(0, 0, 0, 0.03);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.5);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.status-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.status-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  white-space: nowrap;
+}
+
+.status-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.status-composing {
+  color: #e67e22;
+  font-weight: 600;
+}
+
+.status-vim {
+  color: #667eea;
+  font-weight: 600;
+}
+
+[data-color-mode="dark"] .status-bar {
+  background: rgba(255, 255, 255, 0.03);
+  border-top-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.45);
 }

@@ -5,7 +5,7 @@
 
 export interface MarkdownBlock {
   id: string;
-  type: 'heading' | 'paragraph' | 'code' | 'table' | 'list' | 'blockquote' | 'hr' | 'math' | 'mermaid' | 'image' | 'html';
+  type: 'heading' | 'paragraph' | 'code' | 'table' | 'list' | 'blockquote' | 'hr' | 'math' | 'mermaid' | 'image';
   content: string;
   level?: number; // for headings
 }
@@ -181,9 +181,10 @@ export function estimateBlockHeight(block: MarkdownBlock, fontSize: number = 16)
   const lines = block.content.split('\n').length;
   
   switch (block.type) {
-    case 'heading':
+    case 'heading': {
       const level = block.level || 1;
       return fontSize * (3 - level * 0.3) + 32; // 标题更高
+    }
     case 'code':
     case 'mermaid':
       return Math.max(lines * lineHeight + 32, 100); // 代码块至少 100px

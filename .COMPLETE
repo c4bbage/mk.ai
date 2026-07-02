@@ -1,0 +1,8 @@
+Iteration 1 complete: Analyzed Editor, Preview, VirtualPreview, markdown parsing, worker usage, and App sync logic. Added performance_optimization_plan.md with detailed bottleneck analysis, code-level optimization steps (React concurrency, throttled scroll sync, CodeMirror Compartment, Worker-based parsing, KaTeX/Mermaid lazy-load and caching, virtual preview threshold tuning), priorities, and expected impact.
+
+Step 4 (Worker Pipeline MVP) implemented by Codex:
+- Added src/workers/pipeline.worker.ts (parse + highlight in Worker; basic sanitize; block position mapping)
+- Added src/hooks/usePipelineWorker.ts (module Worker hook; seq/version gating)
+- Integrated VirtualPreview and Preview to consume worker-rendered blocks; removed main-thread parse for virtual mode
+- Updated .ralph/PROGRESS.md and .ralph_logs/STEP4_codex_changes.md with details
+Next: Step 5 incremental patch protocol (from/to/inserted) and move KaTeX renderToString into Worker

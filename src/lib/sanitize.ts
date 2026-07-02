@@ -20,6 +20,7 @@ const SANITIZE_OPTIONS: Record<string, unknown> = {
     span: ['class', 'data-tex'],
     code: ['class'],
     pre: ['class'],
+    h1: ['id'], h2: ['id'], h3: ['id'], h4: ['id'], h5: ['id'], h6: ['id'],
     td: ['align'],
     th: ['align'],
     input: ['type', 'checked', 'disabled'],
@@ -45,7 +46,10 @@ export function sanitizeMarkdownHtml(html: string): string {
   try {
     return sanitizeHtml(html, SANITIZE_OPTIONS);
   } catch {
-    // Fallback: strip all tags
-    return html.replace(/<[^>]*>/g, '');
+    // Fallback: strip only dangerous constructs, preserve HTML structure
+    return html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/\bon\w+\s*=\s*['"][^'"]*['"]/gi, '')
+      .replace(/javascript\s*:/gi, '');
   }
 }

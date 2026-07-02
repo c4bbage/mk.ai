@@ -1,27 +1,29 @@
 import { useEffect, useRef } from 'react';
+import { useEditorStore } from '../stores/editor';
 
 interface AutoSaveOptions {
-  /** 是否启用自动保存 */
   enabled: boolean;
-  /** 防抖延迟（毫秒），默认 2000ms */
   delay?: number;
-  /** 内容 */
   content: string;
-  /** 文件路径（未保存则为 undefined） */
   filePath?: string;
-  /** 是否已修改 */
   isModified: boolean;
-  /** 保存回调 */
   onSave: () => Promise<void>;
 }
 
+const BACKUP_PREFIX = 'md-ai-backup-';
+const BACKUP_INTERVAL = 8000; // 8 seconds
+const BACKUP_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
+
+export interface BackupEntry {
+  tabId: string;
+  content: string;
+  fileName: string;
+  filePath?: string;
+  timestamp: number;
+}
+
 /**
- * 自动保存 Hook
- *
- * 功能：
- * 1. 防抖保存 - 停止输入后 N 秒自动保存
- * 2. 失焦保存 - 窗口失去焦点时保存
- * 3. 定时备份 - localStorage 防止意外丢失
+ * 自动保存 Hook — 防抖保存到文件 + 定期备份到 localStorage
  */
 export function useAutoSave({
   enabled,
@@ -33,25 +35,23 @@ export function useAutoSave({
 }: AutoSaveOptions) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedContentRef = useRef<string>(content);
-  // Use refs for values accessed in timers to avoid stale closures
   const contentRef = useRef(content);
   const filePathRef = useRef(filePath);
   const isModifiedRef = useRef(isModified);
   const onSaveRef = useRef(onSave);
 
-  // Keep refs in sync
-  contentRef.current = content;
-  filePathRef.current = filePath;
-  isModifiedRef.current = isModified;
-  onSaveRef.current = onSave;
+  useEffect(() => {
+    contentRef.current = content;
+    filePathRef.current = filePath;
+    isModifiedRef.current = isModified;
+    onSaveRef.current = onSave;
+  }, [content, filePath, isModified, onSave]);
 
-  // 防抖保存 — only depends on content changes, uses refs for latest values
+  // 防抖保存到文件
   useEffect(() => {
     if (!enabled || !filePath || !isModified) return;
 
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
+    if (timerRef.current) clearTimeout(timerRef.current);
 
     timerRef.current = setTimeout(async () => {
       if (contentRef.current !== lastSavedContentRef.current && filePathRef.current && isModifiedRef.current) {
@@ -61,13 +61,11 @@ export function useAutoSave({
     }, delay);
 
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [content, enabled, delay, filePath, isModified]);
 
-  // 失焦保存
+  // 失焦时保存到文件
   useEffect(() => {
     if (!enabled) return;
 
@@ -78,62 +76,174 @@ export function useAutoSave({
       }
     };
 
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isModifiedRef.current) {
-        e.preventDefault();
-        localStorage.setItem('md-ai-backup', JSON.stringify({
-          content: contentRef.current,
-          filePath: filePathRef.current,
-          timestamp: Date.now(),
-        }));
-      }
-    };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [enabled]);
 
-  // 本地备份（每 30 秒）
+  // beforeunload: flush all tabs to backup
   useEffect(() => {
     if (!enabled) return;
 
-    const backupInterval = setInterval(() => {
-      if (isModifiedRef.current) {
-        localStorage.setItem('md-ai-backup', JSON.stringify({
-          content: contentRef.current,
-          filePath: filePathRef.current,
-          timestamp: Date.now(),
-        }));
-      }
-    }, 30000);
+    const handleBeforeUnload = () => {
+      flushAllBackups();
+    };
 
-    return () => clearInterval(backupInterval);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [enabled]);
 }
 
 /**
- * 恢复本地备份
+ * Flush all modified tabs to localStorage backup.
+ * Called on beforeunload and periodically.
  */
-export function getLocalBackup(): { content: string; filePath?: string; timestamp: number } | null {
-  try {
-    const backup = localStorage.getItem('md-ai-backup');
-    if (backup) {
-      return JSON.parse(backup);
+export function flushAllBackups() {
+  const state = useEditorStore.getState();
+  const { tabs } = state;
+
+  for (const tab of tabs) {
+    if (!tab.isModified) continue;
+    const key = `${BACKUP_PREFIX}${tab.id}`;
+    const entry: BackupEntry = {
+      tabId: tab.id,
+      content: tab.content,
+      fileName: tab.fileName,
+      filePath: tab.filePath,
+      timestamp: Date.now(),
+    };
+    try {
+      localStorage.setItem(key, JSON.stringify(entry));
+    } catch (e) {
+      // Quota exceeded — try clearing old backups then retry
+      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+        cleanStaleBackups();
+        try {
+          localStorage.setItem(key, JSON.stringify(entry));
+        } catch {
+          console.warn('[backup] Quota exceeded, skipping tab', tab.fileName);
+        }
+      } else {
+        console.warn('[backup] Failed to write backup:', e);
+      }
     }
-  } catch {
-    console.error('Failed to parse backup');
   }
-  return null;
 }
 
 /**
- * 清除本地备份
+ * Periodic backup runner — call this once from App.
+ * Backs up all modified tabs every 8 seconds.
  */
+export function usePeriodicBackup(enabled: boolean) {
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    intervalRef.current = setInterval(() => {
+      flushAllBackups();
+    }, BACKUP_INTERVAL);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [enabled]);
+}
+
+/**
+ * Get all valid backups for restore on startup.
+ * Returns entries sorted by timestamp (newest first).
+ * Cleans up stale backups (>24h old) automatically.
+ */
+export function getBackupsForRestore(): BackupEntry[] {
+  const results: BackupEntry[] = [];
+  const now = Date.now();
+
+  // Collect all keys first to avoid index shift during removal
+  const keys: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(BACKUP_PREFIX)) keys.push(key);
+  }
+
+  for (const key of keys) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const entry: BackupEntry = JSON.parse(raw);
+
+      // Skip stale backups
+      if (now - entry.timestamp > BACKUP_MAX_AGE) {
+        localStorage.removeItem(key);
+        continue;
+      }
+
+      // Validate content integrity — must have content and fileName
+      if (typeof entry.content !== 'string' || typeof entry.fileName !== 'string') {
+        localStorage.removeItem(key);
+        continue;
+      }
+
+      results.push(entry);
+    } catch {
+      localStorage.removeItem(key);
+    }
+  }
+
+  // Sort newest first
+  results.sort((a, b) => b.timestamp - a.timestamp);
+  return results;
+}
+
+/**
+ * Remove a specific tab's backup after successful restore or save.
+ */
+export function clearBackup(tabId: string) {
+  localStorage.removeItem(`${BACKUP_PREFIX}${tabId}`);
+}
+
+/**
+ * Clean up backups older than 24h. Called on quota overflow.
+ */
+export function cleanStaleBackups() {
+  const now = Date.now();
+  const toRemove: string[] = [];
+
+  // Collect keys first to avoid index shift during iteration
+  const keys: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(BACKUP_PREFIX)) keys.push(key);
+  }
+
+  for (const key of keys) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const entry = JSON.parse(raw);
+      if (now - entry.timestamp > BACKUP_MAX_AGE) {
+        toRemove.push(key);
+      }
+    } catch {
+      toRemove.push(key);
+    }
+  }
+
+  for (const key of toRemove) {
+    localStorage.removeItem(key);
+  }
+}
+
+// ─── Legacy compatibility (deprecated, use getBackupsForRestore) ───
+export function getLocalBackup(): { content: string; filePath?: string; timestamp: number } | null {
+  const entries = getBackupsForRestore();
+  return entries.length > 0
+    ? { content: entries[0].content, filePath: entries[0].filePath, timestamp: entries[0].timestamp }
+    : null;
+}
+
 export function clearLocalBackup(): void {
-  localStorage.removeItem('md-ai-backup');
+  const entries = getBackupsForRestore();
+  for (const e of entries) {
+    clearBackup(e.tabId);
+  }
 }

@@ -3,12 +3,27 @@
  * 支持 Tauri 桌面环境和 Web 浏览器环境
  */
 
-import * as dialog from '@tauri-apps/plugin-dialog';
-import * as fs from '@tauri-apps/plugin-fs';
-
 // 检测是否在 Tauri 环境中
 export function isTauri(): boolean {
-  return typeof window !== 'undefined' && '__TAURI__' in window;
+  return typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window);
+}
+
+// 文件写锁，防止自动保存与手动保存竞争
+const saveLocks = new Map<string, Promise<unknown>>();
+
+async function withWriteLock<T>(path: string, fn: () => Promise<T>): Promise<T> {
+  while (saveLocks.has(path)) {
+    await saveLocks.get(path);
+  }
+  const promise = (async () => {
+    try {
+      return await fn();
+    } finally {
+      saveLocks.delete(path);
+    }
+  })();
+  saveLocks.set(path, promise);
+  return promise as Promise<T>;
 }
 
 /** Maximum file size we allow opening (10 MB) */
@@ -16,6 +31,24 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 /** Allowed file extensions for open */
 const ALLOWED_EXTENSIONS = /\.(md|markdown|txt)$/i;
+
+/** Lazy-load Tauri dialog plugin */
+async function getDialog() {
+  try {
+    return await import('@tauri-apps/plugin-dialog');
+  } catch (e) {
+    throw new Error('Tauri dialog plugin not available: ' + (e as Error).message);
+  }
+}
+
+/** Lazy-load Tauri fs plugin */
+async function getFs() {
+  try {
+    return await import('@tauri-apps/plugin-fs');
+  } catch (e) {
+    throw new Error('Tauri fs plugin not available: ' + (e as Error).message);
+  }
+}
 
 /**
  * Validate a file path string.
@@ -54,6 +87,8 @@ export function isAllowedExtension(path: string): boolean {
 export async function openFile(): Promise<{ content: string; path: string } | null> {
   if (isTauri()) {
     try {
+      const dialog = await getDialog();
+      const fs = await getFs();
       const filePath = await dialog.open({
         multiple: false,
         filters: [{
@@ -63,7 +98,17 @@ export async function openFile(): Promise<{ content: string; path: string } | nu
       });
 
       if (filePath && typeof filePath === 'string') {
+        const pathError = validateFilePath(filePath);
+        if (pathError) {
+          alert(pathError);
+          return null;
+        }
         const content = await fs.readTextFile(filePath);
+        const contentError = validateContent(content);
+        if (contentError) {
+          alert(contentError);
+          return null;
+        }
         return { content, path: filePath };
       }
       return null;
@@ -79,9 +124,32 @@ export async function openFile(): Promise<{ content: string; path: string } | nu
       input.type = 'file';
       input.accept = '.md,.markdown,.txt';
 
+      let settled = false;
+      const cleanup = () => {
+        input.remove();
+        window.removeEventListener('focus', onFocus);
+      };
+      // 用户取消对话框时不会触发 onchange，用 focus 事件检测
+      const onFocus = () => {
+        setTimeout(() => {
+          if (!settled) {
+            settled = true;
+            cleanup();
+            resolve(null);
+          }
+        }, 500);
+      };
+
       input.onchange = async (e) => {
+        settled = true;
+        cleanup();
         const file = (e.target as HTMLInputElement).files?.[0];
         if (file) {
+          if (file.size > MAX_FILE_SIZE) {
+            alert(`文件过大（最大 ${MAX_FILE_SIZE / 1024 / 1024} MB）`);
+            resolve(null);
+            return;
+          }
           const content = await file.text();
           resolve({ content, path: file.name });
         } else {
@@ -89,6 +157,7 @@ export async function openFile(): Promise<{ content: string; path: string } | nu
         }
       };
 
+      window.addEventListener('focus', onFocus);
       input.click();
     });
   }
@@ -101,8 +170,16 @@ export async function saveFile(
   content: string,
   currentPath?: string
 ): Promise<string | null> {
+  const contentError = validateContent(content);
+  if (contentError) {
+    alert(contentError);
+    return null;
+  }
+
   if (isTauri()) {
     try {
+      const dialog = await getDialog();
+      const fs = await getFs();
       let filePath = currentPath;
 
       if (!filePath) {
@@ -116,7 +193,12 @@ export async function saveFile(
       }
 
       if (filePath) {
-        await fs.writeTextFile(filePath, content);
+        const pathError = validateFilePath(filePath);
+        if (pathError) {
+          alert(pathError);
+          return null;
+        }
+        await withWriteLock(filePath, () => fs.writeTextFile(filePath!, content));
         return filePath;
       }
       return null;
@@ -142,8 +224,16 @@ export async function saveFile(
  * 另存为
  */
 export async function saveFileAs(content: string): Promise<string | null> {
+  const contentError = validateContent(content);
+  if (contentError) {
+    alert(contentError);
+    return null;
+  }
+
   if (isTauri()) {
     try {
+      const dialog = await getDialog();
+      const fs = await getFs();
       const filePath = await dialog.save({
         filters: [{
           name: 'Markdown',
@@ -153,7 +243,12 @@ export async function saveFileAs(content: string): Promise<string | null> {
       });
 
       if (filePath) {
-        await fs.writeTextFile(filePath, content);
+        const pathError = validateFilePath(filePath);
+        if (pathError) {
+          alert(pathError);
+          return null;
+        }
+        await withWriteLock(filePath, () => fs.writeTextFile(filePath, content));
         return filePath;
       }
       return null;

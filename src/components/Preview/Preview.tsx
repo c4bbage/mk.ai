@@ -62,28 +62,20 @@ const PreviewComponent = forwardRef<PreviewRef, PreviewProps>(({
       // 组合输入中：暂停预览更新
       return;
     }
-    
+
     const delay = getDebounceDelay(content.length);
-    
+
     renderTimerRef.current = setTimeout(() => {
       setDebouncedContent(content);
       lastContentRef.current = content;
     }, delay);
-    
+
     return () => {
       if (renderTimerRef.current) {
         clearTimeout(renderTimerRef.current);
       }
     };
   }, [content, isComposing]);
-
-  // 组合输入结束后，立即触发一次更新
-  useEffect(() => {
-    if (!isComposing) {
-      setDebouncedContent(content);
-      lastContentRef.current = content;
-    }
-  }, [isComposing, content]);
   
   // 解析 Markdown - 使用 useMemo 缓存，并 sanitize 防止 XSS
   const deferredContent = useDeferredValue(debouncedContent);
@@ -121,6 +113,29 @@ const PreviewComponent = forwardRef<PreviewRef, PreviewProps>(({
     }
   }, []);
 
+  // 主题切换时：重新初始化 Mermaid 主题 + 重置渲染状态
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const hasMermaid = /```mermaid/m.test(lastContentRef.current);
+    if (!hasMermaid) return;
+
+    let cancelled = false;
+    (async () => {
+      const { reinitMermaid } = await import('../../lib/mermaid');
+      const isDark = document.documentElement.getAttribute('data-color-mode') === 'dark';
+      await reinitMermaid(isDark ? 'dark' : 'default');
+      if (cancelled || !containerRef.current) return;
+      // 移除已渲染标记 + 清空内容，让 renderMermaidInElement 重新渲染
+      containerRef.current.querySelectorAll('.mermaid-rendered').forEach(node => {
+        node.classList.remove('mermaid-rendered');
+        node.innerHTML = '';
+      });
+      const { renderMermaidInElement } = await import('../../lib/mermaid');
+      await renderMermaidInElement(containerRef.current);
+    })();
+    return () => { cancelled = true; };
+  }, [theme]);
+
   // 渲染数学公式和 Mermaid 图表（尽量在空闲期执行，降低抢占）
   useEffect(() => {
     perfMark('preview_commit_start');
@@ -132,18 +147,17 @@ const PreviewComponent = forwardRef<PreviewRef, PreviewProps>(({
 
   // 监听滚动事件
   useEffect(() => {
-    if (!containerRef.current || !onScroll) return;
+    const container = containerRef.current;
+    if (!container || !onScroll) return;
 
     const handleScroll = () => {
-      if (containerRef.current) {
-        const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-        onScroll(scrollTop, scrollHeight, clientHeight);
-      }
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      onScroll(scrollTop, scrollHeight, clientHeight);
     };
 
-    containerRef.current.addEventListener('scroll', handleScroll);
+    container.addEventListener('scroll', handleScroll);
     return () => {
-      containerRef.current?.removeEventListener('scroll', handleScroll);
+      container.removeEventListener('scroll', handleScroll);
     };
   }, [onScroll]);
 

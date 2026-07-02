@@ -7,9 +7,6 @@
 export interface PatchMetrics {
   replacedNodes: number;
   patchTimeMs: number;
-  // Approximate reflow count: number of layout reads we performed inside patch
-  // We avoid layout reads in patcher, so this stays 0 unless caller opts-in.
-  reflowCount: number;
 }
 
 /**
@@ -39,7 +36,6 @@ export function applyHtmlPatch(container: HTMLElement, nextHtml: string): PatchM
   const metrics: PatchMetrics = {
     replacedNodes: beforeCount,
     patchTimeMs,
-    reflowCount: 0,
   };
 
   return metrics;

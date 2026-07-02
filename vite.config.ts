@@ -6,13 +6,14 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
         manualChunks: {
-          // 将重依赖拆分成独立 chunk，减少首屏体积
           'cm': ['@codemirror/view', '@codemirror/state', '@codemirror/lang-markdown', '@codemirror/commands', '@codemirror/search', '@codemirror/language'],
           'md': ['marked', 'marked-highlight', 'highlight.js'],
-          'viz': ['mermaid', 'katex'],
+          'katex': ['katex'],
+          'html2canvas': ['html2canvas'],
         },
       },
     },
@@ -21,7 +22,6 @@ export default defineConfig({
     include: [
       '@codemirror/view', '@codemirror/state', '@codemirror/lang-markdown', '@codemirror/commands', '@codemirror/search', '@codemirror/language',
       'marked', 'marked-highlight', 'highlight.js',
-      'mermaid', 'katex',
     ],
   },
   test: {

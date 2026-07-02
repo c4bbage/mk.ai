@@ -1,0 +1,86 @@
+.theme-lavender {
+  --color-text: #3a3857;
+  --color-text-secondary: #5e5a7a;
+  --color-text-muted: #8a85a0;
+  --color-bg: #f8f6ff;
+  --color-bg-secondary: #f0ecf8;
+  --color-bg-code: #eee8ff;
+  --color-bg-pre: #f0ecf8;
+  --color-border: #ddd6f0;
+  --color-link: #7c5cbf;
+  --color-accent: #7c5cbf;
+}
+
+.theme-lavender .markdown-body {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.theme-lavender h1,
+.theme-lavender h2 {
+  border-bottom-color: var(--color-border);
+  color: var(--color-accent);
+}
+
+.theme-lavender h3, .theme-lavender h4 {
+  color: var(--color-accent);
+}
+
+.theme-lavender a {
+  color: var(--color-link);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-accent);
+}
+
+.theme-lavender blockquote {
+  border-left-color: var(--color-accent);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  border-radius: 0 8px 8px 0;
+}
+
+.theme-lavender code {
+  background: var(--color-bg-code);
+  color: #6c4fa8;
+}
+
+.theme-lavender pre {
+  background: var(--color-bg-pre);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.theme-lavender pre code {
+  background: transparent;
+  color: var(--color-text);
+}
+
+.theme-lavender table th {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-border);
+}
+
+.theme-lavender table td {
+  border-color: var(--color-border);
+}
+
+.theme-lavender hr {
+  border-color: var(--color-border);
+  background: linear-gradient(to right, transparent, var(--color-accent), transparent);
+  height: 1px;
+  border: none;
+}
+
+.theme-lavender ul li::marker,
+.theme-lavender ol li::marker {
+  color: var(--color-accent);
+}
+
+.theme-lavender strong {
+  color: var(--color-accent);
+}
+
+.theme-lavender ::selection {
+  background: rgba(124, 92, 191, 0.2);
+}

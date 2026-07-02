@@ -15,7 +15,7 @@ export function startFpsSampler() {
   const samples: FpsSample[] = [];
   let frames = 0;
   let dropped = 0;
-  let start = performance.now();
+  const start = performance.now();
   let last = start;
   let rafId = 0;
   let running = true;

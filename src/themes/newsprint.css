@@ -1,0 +1,70 @@
+.theme-newsprint {
+  --color-text: #4a4239;
+  --color-text-secondary: #6b5f54;
+  --color-text-muted: #8a7e72;
+  --color-bg: #f3ede3;
+  --color-bg-secondary: #e8dccc;
+  --color-bg-code: #e8dccc;
+  --color-bg-pre: #e8dccc;
+  --color-border: #d4cdbf;
+  --color-link: #c0392b;
+  --color-accent: #c0392b;
+}
+
+.theme-newsprint .markdown-body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: "Source Han Serif SC", "Noto Serif SC", "Songti SC", Georgia, serif;
+}
+
+.theme-newsprint h1,
+.theme-newsprint h2 {
+  border-bottom-color: var(--color-border);
+  font-family: var(--font-sans);
+}
+
+.theme-newsprint h1, .theme-newsprint h2, .theme-newsprint h3 {
+  color: var(--color-accent);
+}
+
+.theme-newsprint a {
+  color: var(--color-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.theme-newsprint blockquote {
+  border-left-color: var(--color-accent);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.theme-newsprint code {
+  background: var(--color-bg-code);
+  color: #a52a2a;
+  font-family: var(--font-mono);
+}
+
+.theme-newsprint pre {
+  background: var(--color-bg-pre);
+  border: 1px solid var(--color-border);
+}
+
+.theme-newsprint pre code {
+  background: transparent;
+  color: var(--color-text);
+}
+
+.theme-newsprint table th {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border);
+}
+
+.theme-newsprint table td {
+  border-color: var(--color-border);
+}
+
+.theme-newsprint hr {
+  border-color: var(--color-border);
+  border-style: dashed;
+}

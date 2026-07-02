@@ -4,9 +4,9 @@
  */
 
 import { parseMarkdown } from './markdown';
+import { sanitizeMarkdownHtml } from './sanitize';
 import { isTauri } from './file';
-import { save } from '@tauri-apps/plugin-dialog';
-import { writeTextFile, writeFile } from '@tauri-apps/plugin-fs';
+import { getThemeColors, type ThemeColors } from '../themes';
 
 /**
  * 生成完整的 HTML 文档（包含样式和图片）
@@ -16,10 +16,38 @@ export function generateFullHTML(
   theme: string,
   title: string = 'Markdown Document'
 ): string {
-  const html = parseMarkdown(content);
+  const bodyHtml = getMarkdownBodyHtml(content);
+  return wrapFullHTML(bodyHtml, theme, title);
+}
 
+/**
+ * Parse markdown → sanitize → return body inner HTML only
+ */
+export function getMarkdownBodyHtml(content: string): string {
+  const rawHtml = parseMarkdown(content);
+  return sanitizeMarkdownHtml(rawHtml);
+}
+
+function getKatexCSS(): string {
+  // KaTeX CSS may be loaded as <link> or <style> (via Vite lazy import)
+  const link = document.querySelector('link[href*="katex"]');
+  if (link) return link.outerHTML;
+  // Try to find injected <style> containing katex rules
+  const styles = document.querySelectorAll('style');
+  for (const s of styles) {
+    if (s.textContent && s.textContent.includes('.katex')) {
+      return `<style>${s.textContent}</style>`;
+    }
+  }
+  return '';
+}
+
+/**
+ * Wrap pre-rendered body HTML into a full standalone HTML document
+ */
+function wrapFullHTML(bodyHtml: string, theme: string, title: string): string {
   // 获取 KaTeX 样式
-  const katexCSS = document.querySelector('link[href*="katex"]')?.outerHTML || '';
+  const katexCSS = getKatexCSS();
 
   // 获取当前主题的样式
   const themeStyles = getThemeStyles(theme);
@@ -38,7 +66,7 @@ export function generateFullHTML(
 </head>
 <body>
   <div class="markdown-body">
-    ${html}
+    ${bodyHtml}
   </div>
 </body>
 </html>`;
@@ -51,7 +79,8 @@ export async function copyForWeChat(
   content: string,
   theme: string
 ): Promise<boolean> {
-  const html = parseMarkdown(content);
+  const rawHtml = parseMarkdown(content);
+  const html = sanitizeMarkdownHtml(rawHtml);
   const themeConfig = getWeChatInlineTheme(theme);
 
   // 将 CSS class 样式转为内联样式，微信编辑器不支持 <style> 标签
@@ -91,57 +120,95 @@ export async function copyForWeChat(
   }
 }
 
-/** 微信主题内联样式配置 */
-interface WeChatThemeConfig {
-  text: string;
-  accent: string;
-  bgSecondary: string;
-  bgCode: string;
-  border: string;
+/**
+ * 复制 Markdown 原文到剪贴板
+ */
+export async function copyMarkdown(content: string): Promise<boolean> {
+  try {
+    const textBlob = new Blob([content], { type: 'text/plain' });
+    await navigator.clipboard.write([new ClipboardItem({ 'text/plain': textBlob })]);
+    return true;
+  } catch {
+    const textarea = document.createElement('textarea');
+    textarea.value = content;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return ok;
+  }
 }
 
+/**
+ * 复制渲染后的 HTML 到剪贴板
+ */
+export async function copyHTML(content: string, theme: string, title: string = 'Markdown Document'): Promise<boolean> {
+  const fullHTML = generateFullHTML(content, theme, title);
+  try {
+    const blob = new Blob([fullHTML], { type: 'text/html' });
+    const textBlob = new Blob([content], { type: 'text/plain' });
+    await navigator.clipboard.write([new ClipboardItem({ 'text/html': blob, 'text/plain': textBlob })]);
+    return true;
+  } catch {
+    const container = document.createElement('div');
+    container.innerHTML = fullHTML;
+    container.style.position = 'fixed';
+    container.style.left = '-9999px';
+    document.body.appendChild(container);
+    const range = document.createRange();
+    range.selectNodeContents(container);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    const ok = document.execCommand('copy');
+    selection?.removeAllRanges();
+    document.body.removeChild(container);
+    return ok;
+  }
+}
+
+/** 微信主题内联样式配置 */
+type WeChatThemeConfig = ThemeColors;
+
 function getWeChatInlineTheme(theme: string): WeChatThemeConfig {
-  const themes: Record<string, WeChatThemeConfig> = {
-    'wechat-elegant': { text: '#3f3f3f', accent: '#ff6827', bgSecondary: '#f7f7f7', bgCode: '#fff5f5', border: '#eee' },
-    'wechat-green': { text: '#333', accent: '#07c160', bgSecondary: '#f8fdf8', bgCode: '#f0f9f0', border: '#e0e0e0' },
-    'wechat-blue': { text: '#2c3e50', accent: '#409eff', bgSecondary: '#f5f7fa', bgCode: '#ecf5ff', border: '#dcdfe6' },
-  };
-  return themes[theme] || { text: '#24292e', accent: '#0366d6', bgSecondary: '#f6f8fa', bgCode: '#f6f8fa', border: '#e1e4e8' };
+  return getThemeColors(theme);
 }
 
 /** 将 HTML 标签转为带内联样式的版本（微信公众号兼容） */
 function applyInlineStyles(html: string, t: WeChatThemeConfig): string {
   return html
-    // 标题
-    .replace(/<h1([^>]*)>([\s\S]*?)<\/h1>/g, `<h1$1 style="font-size:1.8em;font-weight:700;text-align:center;color:${t.accent};margin:24px 0 16px;line-height:1.4;border-bottom:2px solid ${t.accent};padding-bottom:12px;">$2</h1>`)
-    .replace(/<h2([^>]*)>([\s\S]*?)<\/h2>/g, `<h2$1 style="font-size:1.3em;font-weight:600;color:#fff;background:${t.accent};padding:6px 14px;border-radius:4px;margin:24px 0 12px;display:inline-block;line-height:1.4;">$2</h2>`)
-    .replace(/<h3([^>]*)>([\s\S]*?)<\/h3>/g, `<h3$1 style="font-size:1.1em;font-weight:600;color:${t.accent};border-left:3px solid ${t.accent};padding-left:10px;margin:20px 0 10px;line-height:1.4;">$2</h3>`)
-    .replace(/<h([4-6])([^>]*)>([\s\S]*?)<\/h\1>/g, `<h$1$2 style="font-weight:600;color:${t.text};margin:16px 0 8px;line-height:1.4;">$3</h$1>`)
+    // 标题 (只处理没有 style 属性的标签，避免重复)
+    .replace(/<h1\b(?![\s>]*style)([^>]*)>([\s\S]*?)<\/h1>/g, `<h1$1 style="font-size:1.8em;font-weight:700;text-align:center;color:${t.accent};margin:24px 0 16px;line-height:1.4;border-bottom:2px solid ${t.accent};padding-bottom:12px;">$2</h1>`)
+    .replace(/<h2\b(?![\s>]*style)([^>]*)>([\s\S]*?)<\/h2>/g, `<h2$1 style="font-size:1.3em;font-weight:600;color:#fff;background:${t.accent};padding:6px 14px;border-radius:4px;margin:24px 0 12px;display:inline-block;line-height:1.4;">$2</h2>`)
+    .replace(/<h3\b(?![\s>]*style)([^>]*)>([\s\S]*?)<\/h3>/g, `<h3$1 style="font-size:1.1em;font-weight:600;color:${t.accent};border-left:3px solid ${t.accent};padding-left:10px;margin:20px 0 10px;line-height:1.4;">$2</h3>`)
+    .replace(/<h([4-6])\b(?![\s>]*style)([^>]*)>([\s\S]*?)<\/h\1>/g, `<h$1$2 style="font-weight:600;color:${t.text};margin:16px 0 8px;line-height:1.4;">$3</h$1>`)
     // 段落
-    .replace(/<p([^>]*)>/g, `<p$1 style="margin:0 0 16px;line-height:1.8;color:${t.text};">`)
+    .replace(/<p\b(?![\s>]*style)([^>]*)>/g, `<p$1 style="margin:0 0 16px;line-height:1.8;color:${t.text};">`)
     // 引用
-    .replace(/<blockquote([^>]*)>/g, `<blockquote$1 style="border-left:4px solid ${t.accent};background:${t.bgSecondary};padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;color:${t.text};">`)
-    // 行内代码
-    .replace(/<code(?![^>]*class="hljs)([^>]*)>/g, `<code$1 style="background:${t.bgCode};color:${t.accent};padding:2px 6px;border-radius:4px;font-size:0.9em;font-family:Menlo,Monaco,Consolas,monospace;">`)
-    // 代码块
-    .replace(/<pre([^>]*)>/g, `<pre$1 style="background:#2b2b2b;padding:16px;border-radius:8px;overflow-x:auto;margin:16px 0;">`)
-    .replace(/<pre[^>]*>\s*<code([^>]*)>/g, `<pre style="background:#2b2b2b;padding:16px;border-radius:8px;overflow-x:auto;margin:16px 0;"><code$1 style="color:#a9b7c6;background:transparent;padding:0;font-size:14px;line-height:1.5;font-family:Menlo,Monaco,Consolas,monospace;">`)
+    .replace(/<blockquote\b(?![\s>]*style)([^>]*)>/g, `<blockquote$1 style="border-left:4px solid ${t.accent};background:${t.bgSecondary};padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;color:${t.text};">`)
+    // 行内代码 (跳过已 style 或 class="hljs" 的)
+    .replace(/<code\b(?![\s>]*style)(?![^>]*class="hljs)([^>]*)>/g, `<code$1 style="background:${t.bgCode};color:${t.accent};padding:2px 6px;border-radius:4px;font-size:0.9em;font-family:Menlo,Monaco,Consolas,monospace;">`)
+    // 代码块 (只处理最外层 <pre>，跳过内部已添加 style 的)
+    .replace(/<pre\b(?![\s>]*style)([^>]*)>/g, `<pre$1 style="background:#2b2b2b;padding:16px;border-radius:8px;overflow-x:auto;margin:16px 0;">`)
+    .replace(/<pre\b(?![\s>]*style)[^>]*>\s*<code\b(?![\s>]*style)([^>]*)>/g, `<pre style="background:#2b2b2b;padding:16px;border-radius:8px;overflow-x:auto;margin:16px 0;"><code$1 style="color:#a9b7c6;background:transparent;padding:0;font-size:14px;line-height:1.5;font-family:Menlo,Monaco,Consolas,monospace;">`)
     // 表格
-    .replace(/<table([^>]*)>/g, `<table$1 style="border-collapse:collapse;width:100%;margin:16px 0;">`)
-    .replace(/<th([^>]*)>/g, `<th$1 style="background:${t.accent};color:#fff;font-weight:600;padding:8px 12px;border:1px solid ${t.border};text-align:left;">`)
-    .replace(/<td([^>]*)>/g, `<td$1 style="padding:8px 12px;border:1px solid ${t.border};">`)
+    .replace(/<table\b(?![\s>]*style)([^>]*)>/g, `<table$1 style="border-collapse:collapse;width:100%;margin:16px 0;">`)
+    .replace(/<th\b(?![\s>]*style)([^>]*)>/g, `<th$1 style="background:${t.accent};color:#fff;font-weight:600;padding:8px 12px;border:1px solid ${t.border};text-align:left;">`)
+    .replace(/<td\b(?![\s>]*style)([^>]*)>/g, `<td$1 style="padding:8px 12px;border:1px solid ${t.border};">`)
     // 链接
-    .replace(/<a ([^>]*)>/g, `<a $1 style="color:${t.accent};text-decoration:none;">`)
+    .replace(/<a \b(?![\s>]*style)([^>]*)>/g, `<a $1 style="color:${t.accent};text-decoration:none;">`)
     // 加粗
-    .replace(/<strong([^>]*)>/g, `<strong$1 style="color:${t.accent};font-weight:600;">`)
+    .replace(/<strong\b(?![\s>]*style)([^>]*)>/g, `<strong$1 style="color:${t.accent};font-weight:600;">`)
     // 列表
-    .replace(/<ul([^>]*)>/g, `<ul$1 style="padding-left:2em;margin:0 0 16px;">`)
-    .replace(/<ol([^>]*)>/g, `<ol$1 style="padding-left:2em;margin:0 0 16px;">`)
-    .replace(/<li([^>]*)>/g, `<li$1 style="margin-bottom:4px;line-height:1.8;">`)
+    .replace(/<ul\b(?![\s>]*style)([^>]*)>/g, `<ul$1 style="padding-left:2em;margin:0 0 16px;">`)
+    .replace(/<ol\b(?![\s>]*style)([^>]*)>/g, `<ol$1 style="padding-left:2em;margin:0 0 16px;">`)
+    .replace(/<li\b(?![\s>]*style)([^>]*)>/g, `<li$1 style="margin-bottom:4px;line-height:1.8;">`)
     // 分割线
-    .replace(/<hr([^>]*)\/?>/g, `<hr$1 style="border:none;height:1px;background:linear-gradient(to right,transparent,${t.accent},transparent);margin:24px 0;" />`)
+    .replace(/<hr\b(?![\s>]*style)([^>]*)\/?>/g, `<hr$1 style="border:none;height:1px;background:linear-gradient(to right,transparent,${t.accent},transparent);margin:24px 0;" />`)
     // 图片
-    .replace(/<img ([^>]*)>/g, `<img $1 style="max-width:100%;height:auto;border-radius:6px;margin:16px auto;display:block;">`);
+    .replace(/<img \b(?![\s>]*style)([^>]*)>/g, `<img $1 style="max-width:100%;height:auto;border-radius:6px;margin:16px auto;display:block;">`);
 }
 
 /**
@@ -155,6 +222,8 @@ export async function exportHTML(
   const fullHTML = generateFullHTML(content, theme, fileName.replace('.html', ''));
   
   if (isTauri()) {
+    const { save } = await import('@tauri-apps/plugin-dialog');
+    const { writeTextFile } = await import('@tauri-apps/plugin-fs');
     const filePath = await save({
       filters: [{ name: 'HTML', extensions: ['html'] }],
       defaultPath: fileName
@@ -169,57 +238,115 @@ export async function exportHTML(
 }
 
 /**
- * 导出为图片 (PNG)
+ * 渲染元素为 Canvas（内部共用）
+ */
+async function renderToCanvas(element: HTMLElement): Promise<HTMLCanvasElement> {
+  const html2canvas = (await import('html2canvas')).default;
+  const computedBg = window.getComputedStyle(element).backgroundColor;
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: computedBg || null,
+    logging: false,
+  });
+  return canvas;
+}
+
+/**
+ * 复制元素截图到剪贴板
+ */
+export async function copyImageToClipboard(element: HTMLElement): Promise<boolean> {
+  const canvas = await renderToCanvas(element);
+
+  try {
+    if (isTauri()) {
+      // Tauri: writeImage 需要 RGBA 原始像素数据
+      const { writeImage } = await import('@tauri-apps/plugin-clipboard-manager');
+      const { Image } = await import('@tauri-apps/api/image');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Cannot get canvas context');
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const rgba = new Uint8Array(imageData.data);
+      const img = await Image.new(
+        rgba,
+        canvas.width,
+        canvas.height
+      );
+      await writeImage(img);
+      document.querySelectorAll('.html2canvas-container').forEach(n => n.remove());
+      return true;
+    }
+
+    // Web: Clipboard API
+    const blob: Blob = await new Promise((resolve) => {
+      canvas.toBlob((b) => resolve(b!), 'image/png');
+    });
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob }),
+      ]);
+      return true;
+    } catch {
+      // 降级：execCommand
+      const dataUrl = canvas.toDataURL('image/png');
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      const container = document.createElement('div');
+      container.contentEditable = 'true';
+      container.appendChild(img);
+      document.body.appendChild(container);
+      const range = document.createRange();
+      range.selectNode(img);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+      document.execCommand('copy');
+      document.body.removeChild(container);
+      return true;
+    }
+  } catch (e) {
+    console.error('[export] copy image failed:', e);
+    document.querySelectorAll('.html2canvas-container').forEach(n => n.remove());
+    return false;
+  }
+}
+
+/**
+ * 导出为图片文件 (PNG)
  */
 export async function exportImage(
   previewElement: HTMLElement,
   fileName: string = 'document.png'
 ): Promise<void> {
-  // 动态导入 html2canvas
-  const html2canvas = (await import('html2canvas')).default;
-  
-  // 创建一个克隆元素用于截图
-  const clone = previewElement.cloneNode(true) as HTMLElement;
-  clone.style.width = `${previewElement.scrollWidth}px`;
-  clone.style.height = 'auto';
-  clone.style.position = 'absolute';
-  clone.style.left = '-9999px';
-  clone.style.background = '#ffffff';
-  document.body.appendChild(clone);
-  
-  try {
-    const canvas = await html2canvas(clone, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      logging: false,
+  const canvas = await renderToCanvas(previewElement);
+  const dataUrl = canvas.toDataURL('image/png');
+
+  if (isTauri()) {
+    const { save } = await import('@tauri-apps/plugin-dialog');
+    const { writeFile } = await import('@tauri-apps/plugin-fs');
+    const filePath = await save({
+      filters: [{ name: 'PNG Image', extensions: ['png'] }],
+      defaultPath: fileName
     });
-    
-    const dataUrl = canvas.toDataURL('image/png');
-    
-    if (isTauri()) {
-      const filePath = await save({
-        filters: [{ name: 'PNG Image', extensions: ['png'] }],
-        defaultPath: fileName
-      });
-      
-      if (filePath) {
-        // 将 base64 转为二进制
-        const base64Data = dataUrl.split(',')[1];
-        const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-        await writeFile(filePath, binaryData);
-      }
-    } else {
-      downloadDataUrl(dataUrl, fileName);
+
+    if (filePath) {
+      const base64Data = dataUrl.split(',')[1];
+      const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+      await writeFile(filePath, binaryData);
     }
-  } finally {
-    document.body.removeChild(clone);
+  } else {
+    downloadDataUrl(dataUrl, fileName);
   }
+
+  document.querySelectorAll('.html2canvas-container').forEach(n => n.remove());
 }
 
 /**
- * 导出为 PDF（使用浏览器打印功能）
+ * 导出为 PDF
+ * 通过隐藏 iframe 加载完整 HTML 并触发打印对话框。
+ * Tauri WKWebView 和 Web 浏览器均通过 iframe contentWindow.print() 实现。
+ * 若 iframe print 不可用（部分 WKWebView），fallback 到 shell.open 临时文件。
  */
 export async function exportPDF(
   content: string,
@@ -227,9 +354,12 @@ export async function exportPDF(
   title: string = 'document'
 ): Promise<void> {
   const fullHTML = generateFullHTML(content, theme, title);
-  
-  // 创建一个隐藏的 iframe 用于打印
+
+  // 尝试 iframe 打印（Web 环境和部分 Tauri 版本支持）
+  let iframePrinted = false;
+  const exportId = `pdf-export-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const iframe = document.createElement('iframe');
+  iframe.id = exportId;
   iframe.style.position = 'fixed';
   iframe.style.right = '0';
   iframe.style.bottom = '0';
@@ -237,23 +367,70 @@ export async function exportPDF(
   iframe.style.height = '0';
   iframe.style.border = 'none';
   document.body.appendChild(iframe);
-  
+
   const doc = iframe.contentWindow?.document;
   if (doc) {
     doc.open();
     doc.write(fullHTML);
     doc.close();
-    
-    // 等待资源加载
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // 触发打印
-    iframe.contentWindow?.print();
+
+    await new Promise<void>((resolve) => {
+      const iframeEl = iframe;
+      const state = { cleaned: false, timer: undefined as ReturnType<typeof setTimeout> | undefined };
+      const cleanup = () => {
+        if (state.cleaned) return;
+        state.cleaned = true;
+        iframeEl.removeEventListener('load', onLoad);
+        if (state.timer) clearTimeout(state.timer);
+      };
+      const onLoad = () => { cleanup(); resolve(); };
+      state.timer = setTimeout(() => { cleanup(); resolve(); }, 3000);
+      iframeEl.addEventListener('load', onLoad);
+      if (iframeEl.contentDocument?.readyState === 'complete') {
+        cleanup();
+        resolve();
+      }
+    });
+
+    try {
+      iframe.contentWindow?.focus();
+    } catch {
+      // ignore
+    }
+    try {
+      iframe.contentWindow?.print();
+      iframePrinted = true;
+    } catch (e) {
+      console.warn('[export] iframe print failed, trying fallback:', e);
+    }
   }
-  
-  // 延迟移除 iframe
+
+  // Tauri fallback: 如果 iframe print 失败，用 shell.open 打开临时 HTML
+  if (!iframePrinted && isTauri()) {
+    try {
+      const { writeTextFile } = await import('@tauri-apps/plugin-fs');
+      const pathModule = await import('@tauri-apps/api/path');
+      const { open } = await import('@tauri-apps/plugin-shell');
+
+      const tempDir = await pathModule.tempDir();
+      const sep = pathModule.sep;
+      const tempPath = `${tempDir}${sep}mdai-export-${Date.now()}.html`;
+
+      // 注入 CSP + 打印按钮 + 自动打印脚本
+      const printHtml = fullHTML
+        .replace('<head>', `<head><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:;">`)
+        .replace('</body>', `<div id="print-bar" style="position:fixed;top:0;left:0;right:0;background:#667eea;color:#fff;padding:12px 20px;font-family:sans-serif;z-index:9999;display:flex;align-items:center;gap:16px;"><span>MD.AI 导出 — 点击打印按钮保存为 PDF</span><button onclick="window.print()" style="background:#fff;color:#667eea;border:none;padding:8px 20px;border-radius:6px;font-size:14px;cursor:pointer;font-weight:600;">打印 / 保存 PDF</button></div><script>window.addEventListener('load',function(){setTimeout(function(){try{window.print()}catch(e){}},1000)})</script></body>`);
+      await writeTextFile(tempPath, printHtml);
+      await open(tempPath);
+    } catch (e) {
+      console.error('[export] Tauri PDF fallback failed:', e);
+    }
+  }
+
+  // 延迟清理 iframe
   setTimeout(() => {
-    document.body.removeChild(iframe);
+    const existingIframe = document.getElementById(exportId);
+    if (existingIframe?.parentNode) document.body.removeChild(existingIframe);
   }, 1000);
 }
 
@@ -396,27 +573,12 @@ function getBaseStyles(): string {
  * 获取主题样式
  */
 function getThemeStyles(theme: string): string {
-  const themes: Record<string, string> = {
-    'github': '',
-    'wechat-elegant': `
-      .markdown-body { color: #3f3f3f; }
-      .markdown-body h1, .markdown-body h2, .markdown-body h3 { color: #ff6827; }
-      .markdown-body a { color: #ff6827; }
-      .markdown-body blockquote { border-left-color: #ff6827; }
-    `,
-    'wechat-green': `
-      .markdown-body { color: #3f3f3f; }
-      .markdown-body h1, .markdown-body h2, .markdown-body h3 { color: #07c160; }
-      .markdown-body a { color: #07c160; }
-      .markdown-body blockquote { border-left-color: #07c160; }
-    `,
-    'wechat-blue': `
-      .markdown-body { color: #3f3f3f; }
-      .markdown-body h1, .markdown-body h2, .markdown-body h3 { color: #409eff; }
-      .markdown-body a { color: #409eff; }
-      .markdown-body blockquote { border-left-color: #409eff; }
-    `,
-  };
-  
-  return themes[theme] || '';
+  const colors = getThemeColors(theme);
+  if (theme === 'github') return '';
+  return `
+    .markdown-body { color: ${colors.text}; }
+    .markdown-body h1, .markdown-body h2, .markdown-body h3 { color: ${colors.accent}; }
+    .markdown-body a { color: ${colors.accent}; }
+    .markdown-body blockquote { border-left-color: ${colors.accent}; }
+  `;
 }

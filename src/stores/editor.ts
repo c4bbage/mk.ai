@@ -1,41 +1,67 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { DEFAULT_MARKDOWN } from '../lib/markdown';
 import type { ImageStorageStrategy } from '../types';
 
-interface EditorStore {
-  // 内容
+interface Doc {
+  id: string;
   content: string;
-  setContent: (content: string) => void;
-  
-  // 文件信息
   fileName: string;
-  setFileName: (name: string) => void;
   filePath: string | undefined;
-  setFilePath: (path: string | undefined) => void;
-  
-  // 修改状态
   isModified: boolean;
+}
+
+interface EditorStore {
+  // ─── Tabs ───
+  tabs: Doc[];
+  activeTabId: string;
+  openTab: (doc: { content: string; fileName: string; filePath?: string }) => string;
+  closeTab: (id: string) => void;
+  switchTab: (id: string) => void;
+
+  // ─── Active document (shadow fields, kept in sync with active tab) ───
+  content: string;
+  fileName: string;
+  filePath: string | undefined;
+  isModified: boolean;
+  setContent: (content: string) => void;
+  setFileName: (name: string) => void;
+  setFilePath: (path: string | undefined) => void;
   setIsModified: (modified: boolean) => void;
-  
-  // 主题
+
+  // ─── Theme ───
   theme: string;
   setTheme: (theme: string) => void;
-  
-  // 字体大小
+
+  // ─── Font ───
   fontSize: number;
   setFontSize: (size: number) => void;
-  
-  // 图片存储策略
+  adjustFontSize: (delta: number) => void;
+  fontId: string;
+  codeFontId: string;
+  setFontId: (id: string) => void;
+  setCodeFontId: (id: string) => void;
+
+  // ─── Image ───
   imageStorage: ImageStorageStrategy;
   setImageStorage: (strategy: ImageStorageStrategy) => void;
-  
-  // 自动保存
+
+  // ─── Vim ───
+  vimMode: boolean;
+  toggleVimMode: () => void;
+
+  // ─── Color mode ───
+  colorMode: 'auto' | 'light' | 'dark';
+  setColorMode: (mode: 'auto' | 'light' | 'dark') => void;
+  cycleColorMode: () => void;
+
+  // ─── Auto-save ───
   autoSave: boolean;
   autoSaveDelay: number;
   setAutoSave: (enabled: boolean) => void;
   setAutoSaveDelay: (delay: number) => void;
-  
-  // 显示设置
+
+  // ─── View ───
   showEditor: boolean;
   showPreview: boolean;
   showOutline: boolean;
@@ -44,53 +70,205 @@ interface EditorStore {
   togglePreview: () => void;
   toggleOutline: () => void;
   toggleFileTree: () => void;
-  
-  // 重置
+
+  // ─── Reset ───
   reset: () => void;
 }
 
-export const useEditorStore = create<EditorStore>((set) => ({
-  content: DEFAULT_MARKDOWN,
-  setContent: (content) => set({ content, isModified: true }),
-  
-  fileName: 'untitled.md',
-  setFileName: (fileName) => set({ fileName }),
-  
-  filePath: undefined,
-  setFilePath: (filePath) => set({ filePath }),
-  
-  isModified: false,
-  setIsModified: (isModified) => set({ isModified }),
-  
-  theme: 'github',
-  setTheme: (theme) => set({ theme }),
-  
-  fontSize: 16,
-  setFontSize: (fontSize) => set({ fontSize }),
-  
-  // 图片存储：默认使用 assets (Typora 风格)
-  imageStorage: 'assets',
-  setImageStorage: (imageStorage) => set({ imageStorage }),
-  
-  // 自动保存：默认开启，2秒延迟
-  autoSave: true,
-  autoSaveDelay: 2000,
-  setAutoSave: (autoSave) => set({ autoSave }),
-  setAutoSaveDelay: (autoSaveDelay) => set({ autoSaveDelay }),
-  
-  showEditor: true,
-  showPreview: true,
-  showOutline: false,
-  showFileTree: false,
-  toggleEditor: () => set((state) => ({ showEditor: !state.showEditor })),
-  togglePreview: () => set((state) => ({ showPreview: !state.showPreview })),
-  toggleOutline: () => set((state) => ({ showOutline: !state.showOutline })),
-  toggleFileTree: () => set((state) => ({ showFileTree: !state.showFileTree })),
-  
-  reset: () => set({
-    content: DEFAULT_MARKDOWN,
-    fileName: 'untitled.md',
-    filePath: undefined,
-    isModified: false,
-  }),
-}));
+let tabIdCounter = 0;
+function genTabId() { return `tab-${Date.now()}-${tabIdCounter++}`; }
+
+function patchTab(tabs: Doc[], tabId: string, patch: Partial<Doc>): Doc[] {
+  return tabs.map(t => t.id === tabId ? { ...t, ...patch } : t);
+}
+
+function findTab(tabs: Doc[], tabId: string): Doc | undefined {
+  return tabs.find(t => t.id === tabId);
+}
+
+export const useEditorStore = create<EditorStore>()(
+  persist(
+    (set, get) => {
+      const initialId = genTabId();
+      const initialDoc: Doc = {
+        id: initialId,
+        content: DEFAULT_MARKDOWN,
+        fileName: 'untitled.md',
+        filePath: undefined,
+        isModified: false,
+      };
+
+      // Helper to sync shadow fields from active tab
+      const syncShadow = (tabs: Doc[], activeTabId: string) => {
+        const t = findTab(tabs, activeTabId) || tabs[0];
+        return { content: t.content, fileName: t.fileName, filePath: t.filePath, isModified: t.isModified };
+      };
+
+      return {
+      tabs: [initialDoc],
+      activeTabId: initialId,
+      content: initialDoc.content,
+      fileName: initialDoc.fileName,
+      filePath: initialDoc.filePath,
+      isModified: initialDoc.isModified,
+
+      openTab: (doc) => {
+        const { tabs } = get();
+        if (doc.filePath) {
+          const existing = tabs.find(t => t.filePath === doc.filePath);
+          if (existing) {
+            set({ activeTabId: existing.id, ...syncShadow(tabs, existing.id) });
+            return existing.id;
+          }
+        }
+        const id = genTabId();
+        const newTab: Doc = {
+          id,
+          content: doc.content,
+          fileName: doc.fileName,
+          filePath: doc.filePath,
+          isModified: false,
+        };
+        set({ tabs: [...tabs, newTab], activeTabId: id, ...syncShadow([...tabs, newTab], id) });
+        return id;
+      },
+
+      closeTab: (id) => {
+        const { tabs, activeTabId } = get();
+        const idx = tabs.findIndex(t => t.id === id);
+        if (idx === -1) return;
+        const newTabs = tabs.filter(t => t.id !== id);
+        if (newTabs.length === 0) {
+          const freshId = genTabId();
+          const freshTab: Doc = {
+            id: freshId,
+            content: DEFAULT_MARKDOWN,
+            fileName: 'untitled.md',
+            filePath: undefined,
+            isModified: false,
+          };
+          set({ tabs: [freshTab], activeTabId: freshId, ...syncShadow([freshTab], freshId) });
+          return;
+        }
+        const newActiveId = id === activeTabId
+          ? newTabs[Math.min(idx, newTabs.length - 1)].id
+          : activeTabId;
+        set({ tabs: newTabs, activeTabId: newActiveId, ...syncShadow(newTabs, newActiveId) });
+      },
+
+      switchTab: (id) => {
+        const { tabs } = get();
+        if (findTab(tabs, id)) {
+          set({ activeTabId: id, ...syncShadow(tabs, id) });
+        }
+      },
+
+      // ─── Document setters (write to active tab + sync shadow) ───
+      setContent: (content) => {
+        const { activeTabId, tabs } = get();
+        const current = findTab(tabs, activeTabId);
+        if (current && current.content === content) return;
+        const newTabs = patchTab(tabs, activeTabId, { content, isModified: true });
+        set({ tabs: newTabs, content, isModified: true });
+      },
+      setFileName: (fileName) => {
+        const { activeTabId, tabs } = get();
+        const newTabs = patchTab(tabs, activeTabId, { fileName });
+        set({ tabs: newTabs, fileName });
+      },
+      setFilePath: (filePath) => {
+        const { activeTabId, tabs } = get();
+        const newTabs = patchTab(tabs, activeTabId, { filePath });
+        set({ tabs: newTabs, filePath });
+      },
+      setIsModified: (isModified) => {
+        const { activeTabId, tabs } = get();
+        const newTabs = patchTab(tabs, activeTabId, { isModified });
+        set({ tabs: newTabs, isModified });
+      },
+
+      // ─── Theme ───
+      theme: 'github',
+      setTheme: (theme) => set({ theme }),
+
+      // ─── Font ───
+      fontSize: 16,
+      setFontSize: (fontSize) => set({ fontSize }),
+      adjustFontSize: (delta) => set((state) => ({ fontSize: Math.min(24, Math.max(12, state.fontSize + delta)) })),
+      fontId: 'system',
+      codeFontId: 'jetbrains',
+      setFontId: (fontId) => set({ fontId }),
+      setCodeFontId: (codeFontId) => set({ codeFontId }),
+
+      // ─── Image ───
+      imageStorage: 'assets',
+      setImageStorage: (imageStorage) => set({ imageStorage }),
+
+      // ─── Vim ───
+      vimMode: false,
+      toggleVimMode: () => set((state) => ({ vimMode: !state.vimMode })),
+
+      // ─── Color mode ───
+      colorMode: 'auto',
+      setColorMode: (colorMode) => set({ colorMode }),
+      cycleColorMode: () => set((state) => {
+        const order: ('auto' | 'light' | 'dark')[] = ['auto', 'light', 'dark'];
+        const idx = order.indexOf(state.colorMode);
+        return { colorMode: order[(idx + 1) % order.length] };
+      }),
+
+      // ─── Auto-save ───
+      autoSave: true,
+      autoSaveDelay: 2000,
+      setAutoSave: (autoSave) => set({ autoSave }),
+      setAutoSaveDelay: (autoSaveDelay) => set({ autoSaveDelay }),
+
+      // ─── View ───
+      showEditor: true,
+      showPreview: true,
+      showOutline: false,
+      showFileTree: false,
+      toggleEditor: () => set((state) => ({ showEditor: !state.showEditor })),
+      togglePreview: () => set((state) => ({ showPreview: !state.showPreview })),
+      toggleOutline: () => set((state) => ({ showOutline: !state.showOutline })),
+      toggleFileTree: () => set((state) => ({ showFileTree: !state.showFileTree })),
+
+      // ─── Reset (reset active tab) ───
+      reset: () => {
+        const { activeTabId, tabs } = get();
+        const newTabs = patchTab(tabs, activeTabId, {
+          content: DEFAULT_MARKDOWN,
+          fileName: 'untitled.md',
+          filePath: undefined,
+          isModified: false,
+        });
+        set({
+          tabs: newTabs,
+          content: DEFAULT_MARKDOWN,
+          fileName: 'untitled.md',
+          filePath: undefined,
+          isModified: false,
+        });
+      },
+      };
+    },
+    {
+      name: 'md-ai-settings-v2',
+      partialize: (state) => ({
+        theme: state.theme,
+        fontSize: state.fontSize,
+        fontId: state.fontId,
+        codeFontId: state.codeFontId,
+        colorMode: state.colorMode,
+        vimMode: state.vimMode,
+        imageStorage: state.imageStorage,
+        autoSave: state.autoSave,
+        autoSaveDelay: state.autoSaveDelay,
+        showEditor: state.showEditor,
+        showPreview: state.showPreview,
+        showOutline: state.showOutline,
+        showFileTree: state.showFileTree,
+      }),
+    }
+  )
+);

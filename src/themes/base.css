@@ -188,6 +188,43 @@
   padding: var(--spacing-md);
 }
 
+/* ===== 目录 (TOC) ===== */
+.markdown-body .toc {
+  list-style: none;
+  padding: 12px 16px;
+  margin: 16px 0;
+  background: var(--color-bg-secondary, #f6f8fa);
+  border-radius: 8px;
+  border-left: 4px solid var(--color-accent, #667eea);
+}
+
+.markdown-body .toc-item {
+  margin: 4px 0;
+}
+
+.markdown-body .toc-item a {
+  color: var(--color-link, #0366d6);
+  text-decoration: none;
+  font-size: 0.95em;
+}
+
+.markdown-body .toc-item a:hover {
+  text-decoration: underline;
+}
+
+.markdown-body .toc-level-1 { font-weight: 600; }
+.markdown-body .toc-level-3,
+.markdown-body .toc-level-4,
+.markdown-body .toc-level-5,
+.markdown-body .toc-level-6 { font-size: 0.9em; opacity: 0.8; }
+
+.markdown-body .toc-empty {
+  color: var(--color-text-muted, #6a737d);
+  font-style: italic;
+  text-align: center;
+  padding: 16px;
+}
+
 /* ===== 图片样式 ===== */
 .markdown-body .md-image {
   display: block;

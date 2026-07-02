@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle, memo } from 'react';
+import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle, memo, useMemo } from 'react';
 import { estimateBlockHeight } from '../../lib/markdown-blocks';
 
 import { renderMathInElement } from '../../lib/math';
@@ -17,8 +17,8 @@ interface VirtualPreviewProps {
   content: string;
   theme: string;
   fontSize?: number;
-  // IME 组合输入期间暂停预览解析
   isComposing?: boolean;
+  onScroll?: (scrollTop: number, scrollHeight: number, clientHeight: number) => void;
 }
 
 // 渲染缓存 (LRU)
@@ -29,7 +29,6 @@ function getCachedRender(block: RenderBlock): string | null {
   const key = block.contentHash || `${block.type}:${block.content}`;
   const hit = renderCache.get(key);
   if (hit) {
-    // Refresh LRU order
     renderCache.delete(key);
     renderCache.set(key, hit);
   }
@@ -38,105 +37,28 @@ function getCachedRender(block: RenderBlock): string | null {
 
 function setCachedRender(block: RenderBlock, html: string): void {
   const key = block.contentHash || `${block.type}:${block.content}`;
-
-  // LRU: 超过限制时删除最早的
   if (renderCache.size >= CACHE_SIZE) {
     const firstKey = renderCache.keys().next().value;
     if (firstKey) renderCache.delete(firstKey);
   }
-
   renderCache.set(key, html);
-}
-
-// ─── Shared IntersectionObserver ───
-// Instead of creating one observer per block, we share a single observer
-// and dispatch visibility callbacks via a WeakMap lookup.
-type VisibilityCallback = () => void;
-const observerCallbacks = new WeakMap<Element, VisibilityCallback>();
-let sharedObserver: IntersectionObserver | null = null;
-let observedCount = 0;
-
-function getSharedObserver(): IntersectionObserver {
-  if (!sharedObserver) {
-    sharedObserver = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            const cb = observerCallbacks.get(entry.target);
-            if (cb) {
-              cb();
-              // Once visible, stop observing
-              sharedObserver!.unobserve(entry.target);
-              observerCallbacks.delete(entry.target);
-              observedCount--;
-            }
-          }
-        }
-        // Cleanup observer when nothing is being observed
-        if (observedCount <= 0 && sharedObserver) {
-          sharedObserver.disconnect();
-          sharedObserver = null;
-          observedCount = 0;
-        }
-      },
-      { rootMargin: '200px', threshold: 0 }
-    );
-  }
-  return sharedObserver;
-}
-
-function observeElement(el: Element, cb: VisibilityCallback) {
-  observerCallbacks.set(el, cb);
-  observedCount++;
-  getSharedObserver().observe(el);
-}
-
-function unobserveElement(el: Element) {
-  if (sharedObserver) {
-    sharedObserver.unobserve(el);
-  }
-  if (observerCallbacks.has(el)) {
-    observerCallbacks.delete(el);
-    observedCount--;
-  }
 }
 
 // 单个块的渲染组件 — memoized to skip re-renders when block hasn't changed
 const BlockRenderer = memo(function BlockRenderer({
   block,
-  fontSize,
-  onVisible,
   requestHighlight,
 }: {
   block: RenderBlock;
-  fontSize: number;
-  onVisible: () => void;
   requestHighlight: (block: RenderBlock) => void;
 }) {
   const { disableHighlight } = useRuntimeStore();
   const ref = useRef<HTMLDivElement>(null);
-  const [isRendered, setIsRendered] = useState(false);
-  const [html, setHtml] = useState<string>('');
   const contentRef = useRef<HTMLDivElement | null>(null);
   const currentHtmlRef = useRef<string>('');
 
-  // Shared IntersectionObserver 懒加载
-  useEffect(() => {
-    const element = ref.current;
-    if (!element || isRendered) return;
-
-    observeElement(element, () => {
-      setIsRendered(true);
-      onVisible();
-    });
-
-    return () => unobserveElement(element);
-  }, [isRendered, onVisible]);
-
   // 渲染内容
   useEffect(() => {
-    if (!isRendered) return;
-
     const container = contentRef.current;
     const nextHtml = getCachedRender(block) ?? (block.html || '');
 
@@ -154,13 +76,12 @@ const BlockRenderer = memo(function BlockRenderer({
         console.debug('[VirtualPreview] patch', { blockId: block.id, commitMs, ...metrics });
       }
     }
-
-    setHtml(nextHtml);
-  }, [isRendered, block, disableHighlight, requestHighlight]);
+  }, [block, disableHighlight, requestHighlight]);
 
   // 渲染公式和图表（按需 + 异步）
   useEffect(() => {
-    if (!isRendered || !html || !ref.current) return;
+    const html = currentHtmlRef.current;
+    if (!html || !ref.current) return;
 
     const container = contentRef.current || ref.current;
     const hasMath = block.type === 'math' || html.includes('math-');
@@ -175,44 +96,36 @@ const BlockRenderer = memo(function BlockRenderer({
       }
     });
     return () => cancelAnimationFrame(rafId);
-  }, [html, isRendered, block.type]);
-
-  const estimatedHeight = estimateBlockHeight({ id: block.id, type: block.type as any, content: block.content, level: block.level }, fontSize);
+  }, [block.html, block.type]);
 
   return (
     <div
       ref={ref}
       className={`preview-block preview-block-${block.type}`}
       data-block-id={block.id}
-      style={{
-        minHeight: isRendered ? undefined : `${estimatedHeight}px`,
-      }}
     >
-      {isRendered ? (
-        <div ref={contentRef} />
-      ) : (
-        <div className="preview-block-placeholder" style={{ height: estimatedHeight }}>
-          <div className="placeholder-shimmer" />
-        </div>
-      )}
+      <div ref={contentRef} />
     </div>
   );
 }, (prev, next) => {
-  // Only re-render if the block's html or content actually changed
   return prev.block.id === next.block.id
     && prev.block.html === next.block.html
-    && prev.block.contentHash === next.block.contentHash
-    && prev.fontSize === next.fontSize;
+    && prev.block.contentHash === next.block.contentHash;
 });
+
+// Overscan: render extra blocks above/below viewport for smooth scrolling
+const OVERSCAN = 3;
 
 export const VirtualPreview = forwardRef<PreviewRef, VirtualPreviewProps>(function VirtualPreview({
   content,
   theme,
   fontSize = 16,
   isComposing = false,
+  onScroll,
 }, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [renderedCount, setRenderedCount] = useState(0);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(0);
 
   // 组合输入期间：冻结解析内容，避免频繁更新
   const lastStableContentRef = useRef(content);
@@ -233,14 +146,92 @@ export const VirtualPreview = forwardRef<PreviewRef, VirtualPreviewProps>(functi
   const themeConfig = THEMES.find(t => t.id === theme);
   const themeClass = themeConfig?.className || 'theme-github';
 
-  // 块可见回调
-  const handleBlockVisible = useCallback(() => {
-    setRenderedCount(c => c + 1);
-  }, []);
+  // 预计算每个块的估算高度和累计偏移量
+  const layout = useMemo(() => {
+    const heights: number[] = [];
+    const offsets: number[] = [];
+    let total = 0;
+    for (let i = 0; i < blocks.length; i++) {
+      const h = estimateBlockHeight({ id: blocks[i].id, type: blocks[i].type, content: blocks[i].content, level: blocks[i].level }, fontSize);
+      heights.push(h);
+      offsets.push(total);
+      total += h;
+    }
+    return { heights, offsets, total };
+  }, [blocks, fontSize]);
 
-  // 文档统计
-  const totalBlocks = blocks.length;
-  const progress = totalBlocks > 0 ? Math.round((renderedCount / totalBlocks) * 100) : 100;
+  // 计算可见范围
+  const visibleRange = useMemo(() => {
+    if (blocks.length === 0) return { start: 0, end: 0 };
+    const top = scrollTop;
+    const bottom = scrollTop + viewportHeight;
+
+    // Binary search for first block whose bottom is below `top - overscan`
+    let lo = 0, hi = blocks.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      const blockBottom = layout.offsets[mid] + layout.heights[mid];
+      if (blockBottom < top) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    const start = Math.max(0, lo - OVERSCAN);
+
+    // Binary search for last block whose top is above `bottom + overscan`
+    lo = start; hi = blocks.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (layout.offsets[mid] > bottom) {
+        hi = mid - 1;
+      } else {
+        lo = mid;
+      }
+    }
+    const end = Math.min(blocks.length - 1, lo + OVERSCAN);
+
+    return { start, end };
+  }, [scrollTop, viewportHeight, blocks.length, layout]);
+
+  // 滚动事件 (rAF 节流)
+  const rafPendingRef = useRef(false);
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      if (rafPendingRef.current) return;
+      rafPendingRef.current = true;
+      requestAnimationFrame(() => {
+        rafPendingRef.current = false;
+        if (containerRef.current) {
+          const st = containerRef.current.scrollTop;
+          setScrollTop(st);
+          if (onScroll) {
+            onScroll(st, containerRef.current.scrollHeight, containerRef.current.clientHeight);
+          }
+        }
+      });
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    // Initial measurement
+    setViewportHeight(container.clientHeight);
+    setScrollTop(container.scrollTop);
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (containerRef.current) {
+        setViewportHeight(containerRef.current.clientHeight);
+      }
+    });
+    resizeObserver.observe(container);
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   // 暴露滚动控制，便于从编辑器跳转到光标位置
   useImperativeHandle(ref, () => ({
@@ -257,6 +248,8 @@ export const VirtualPreview = forwardRef<PreviewRef, VirtualPreviewProps>(functi
     requestAnimationFrame(() => requestHighlight(b));
   }, [requestHighlight]);
 
+  const visibleBlocks = blocks.slice(visibleRange.start, visibleRange.end + 1);
+
   return (
     <div className={`preview-container virtual-preview ${themeClass}`}>
       {/* 解析中指示器 */}
@@ -270,17 +263,7 @@ export const VirtualPreview = forwardRef<PreviewRef, VirtualPreviewProps>(functi
       {/* 性能指标 (开发模式) */}
       {parseTime > 0 && import.meta.env.DEV && (
         <div className="perf-stats">
-          解析: {parseTime.toFixed(1)}ms | 块: {totalBlocks}
-        </div>
-      )}
-
-      {/* 渲染进度指示器 (大文档时显示) */}
-      {totalBlocks > 50 && progress < 100 && !isParsing && (
-        <div className="render-progress">
-          <div className="render-progress-bar" style={{ width: `${progress}%` }} />
-          <span className="render-progress-text">
-            渲染中 {renderedCount}/{totalBlocks}
-          </span>
+          解析: {parseTime.toFixed(1)}ms | 块: {blocks.length} | 可见: {visibleRange.start}-{visibleRange.end}
         </div>
       )}
 
@@ -289,16 +272,27 @@ export const VirtualPreview = forwardRef<PreviewRef, VirtualPreviewProps>(functi
         className="markdown-body virtual-scroll-container"
         style={{ fontSize: `${fontSize}px` }}
       >
-        {blocks.map((block) => (
-          <BlockRenderer
-            key={block.id}
-            block={block}
-            fontSize={fontSize}
-            onVisible={handleBlockVisible}
-            requestHighlight={deferredHighlight}
-          />
-        ))}
-        
+        {/* Spacer div with total estimated height to maintain scrollbar */}
+        <div style={{ height: layout.total, position: 'relative' }}>
+          {/* Offset to position visible blocks correctly */}
+          <div style={{ transform: `translateY(${layout.offsets[visibleRange.start] || 0}px)` }}>
+            {visibleBlocks.map((block, i) => {
+              const blockIndex = visibleRange.start + i;
+              return (
+                <div
+                  key={block.id}
+                  style={{ minHeight: layout.heights[blockIndex] }}
+                >
+                  <BlockRenderer
+                    block={block}
+                    requestHighlight={deferredHighlight}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {blocks.length === 0 && (
           <div className="preview-empty">
             <span>开始输入 Markdown...</span>

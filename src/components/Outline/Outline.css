@@ -118,3 +118,61 @@
 .outline-list::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.2);
 }
+
+/* ===== Drag & reorder ===== */
+.outline-item.dragging {
+  opacity: 0.4;
+}
+
+.outline-item.drag-over {
+  border-top: 2px solid #667eea;
+  background: rgba(102, 126, 234, 0.08);
+}
+
+/* ===== Level controls ===== */
+.outline-controls {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.outline-item:hover .outline-controls {
+  opacity: 1;
+}
+
+.outline-level-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 10px;
+  color: rgba(102, 126, 234, 0.6);
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.outline-level-btn:hover {
+  background: rgba(102, 126, 234, 0.15);
+  color: #667eea;
+}
+
+.outline-level-btn:disabled {
+  opacity: 0.2;
+  cursor: default;
+}
+
+/* ===== Hint text ===== */
+.outline-hint {
+  font-size: 10px;
+  color: rgba(102, 126, 234, 0.5);
+  margin-left: auto;
+  font-weight: 400;
+}
+
+/* ===== Dark mode ===== */
+[data-color-mode="dark"] .outline-level-btn:hover {
+  background: rgba(102, 126, 234, 0.2);
+  color: #a5b4fc;
+}
