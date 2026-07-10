@@ -18,7 +18,7 @@ jobs:
           - platform: macos-14
             target: aarch64-apple-darwin
             label: macOS-Apple-Silicon
-          - platform: macos-13
+          - platform: macos-14
             target: x86_64-apple-darwin
             label: macOS-Intel
           - platform: windows-latest
@@ -80,7 +80,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: always() && startsWith(github.ref, 'refs/tags/v') && contains(needs.build.result, 'success')
     steps:
       - uses: actions/download-artifact@v4
         with:
