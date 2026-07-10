@@ -13,9 +13,11 @@ interface FileTreeProps {
   currentFilePath?: string;
   onFileSelect: (path: string) => void;
   onFolderOpen?: (path: string) => void;
+  onFileRename?: (oldPath: string, newPath: string) => void;
+  onFileDelete?: (path: string) => void;
 }
 
-export function FileTree({ currentFilePath, onFileSelect, onFolderOpen }: FileTreeProps) {
+export function FileTree({ currentFilePath, onFileSelect, onFolderOpen, onFileRename, onFileDelete }: FileTreeProps) {
   const [manualRoot, setManualRoot] = useState<string | null>(null);
   const [entriesState, setEntriesState] = useState<FileEntry[]>([]);
   const [loadedRoot, setLoadedRoot] = useState<string | null>(null);
@@ -127,9 +129,15 @@ export function FileTree({ currentFilePath, onFileSelect, onFolderOpen }: FileTr
       newExpanded.add(entry.path);
       if (!entry.children) {
         const children = await loadDirectory(entry.path);
-        setEntriesState(prev => prev.map(e =>
-          e.path === entry.path ? { ...e, children } : e
-        ));
+        setEntriesState(prev => {
+          const updateChildren = (list: FileEntry[]): FileEntry[] =>
+            list.map(e => {
+              if (e.path === entry.path) return { ...e, children };
+              if (e.children) return { ...e, children: updateChildren(e.children) };
+              return e;
+            });
+          return updateChildren(prev);
+        });
       }
     }
     setExpandedDirs(newExpanded);
@@ -165,11 +173,14 @@ export function FileTree({ currentFilePath, onFileSelect, onFolderOpen }: FileTr
       const fs = await import('@tauri-apps/plugin-fs');
       await fs.rename(oldPath, newPath);
       await reloadDir(dir);
+      if (oldPath === currentFilePath) {
+        onFileRename?.(oldPath, newPath);
+      }
     } catch (e) {
       console.error('[FileTree] Failed to rename:', e);
     }
     setRenaming(null);
-  }, [renaming, reloadDir]);
+  }, [renaming, reloadDir, currentFilePath, onFileRename]);
 
   const handleDelete = useCallback(async (path: string, isDir: boolean) => {
     const name = path.split(/[/\\]/).pop() || path;
@@ -183,10 +194,13 @@ export function FileTree({ currentFilePath, onFileSelect, onFolderOpen }: FileTr
       }
       const dir = path.split(/[/\\]/).slice(0, -1).join('/');
       await reloadDir(dir);
+      if (path === currentFilePath) {
+        onFileDelete?.(path);
+      }
     } catch (e) {
       console.error('[FileTree] Failed to delete:', e);
     }
-  }, [reloadDir]);
+  }, [reloadDir, currentFilePath, onFileDelete]);
 
   // ─── Context menu ───
   const handleContextMenu = useCallback((e: React.MouseEvent, entry: FileEntry | null) => {

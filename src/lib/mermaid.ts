@@ -16,18 +16,50 @@ async function getMermaid() {
 async function initMermaidInternal(theme: 'default' | 'dark' | 'forest' | 'neutral' = 'default'): Promise<void> {
   const mermaid = await getMermaid();
   currentTheme = theme;
+  const fontFamily = '-apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
   mermaid.initialize({
     startOnLoad: false,
     theme,
     securityLevel: 'loose',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif',
+    htmlLabels: false,
+    fontFamily,
+    fontSize: 14,
     flowchart: {
-      useMaxWidth: true,
-      htmlLabels: true,
+      useMaxWidth: false,
+      htmlLabels: false,
       curve: 'basis',
+      padding: 15,
     },
     sequence: {
-      useMaxWidth: true,
+      useMaxWidth: false,
+    },
+    gantt: {
+      useMaxWidth: false,
+    },
+    journey: {
+      useMaxWidth: false,
+    },
+    class: {
+      useMaxWidth: false,
+    },
+    state: {
+      useMaxWidth: false,
+    },
+    er: {
+      useMaxWidth: false,
+    },
+    pie: {
+      useMaxWidth: false,
+    },
+    gitGraph: {
+      useMaxWidth: false,
+    },
+    mindmap: {
+      useMaxWidth: false,
+      padding: 15,
+    },
+    timeline: {
+      useMaxWidth: false,
     },
     themeVariables: {
       primaryColor: '#667eea',
@@ -36,6 +68,7 @@ async function initMermaidInternal(theme: 'default' | 'dark' | 'forest' | 'neutr
       lineColor: '#667eea',
       secondaryColor: '#f0f0f0',
       tertiaryColor: '#fafafa',
+      fontSize: '14px',
     },
   });
 }

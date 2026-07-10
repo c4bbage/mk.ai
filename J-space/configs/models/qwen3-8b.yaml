@@ -1,0 +1,15 @@
+# Qwen3-8B dense. bf16 ~16 GB on one GPU + activations/backward. Needs one
+# mostly-free H20 (fits easily once a serving slot is freed). A good first
+# "real" lens: fast to fit (~tens of minutes for 100 prompts, dim_batch 8).
+name: qwen3-8b
+hf_path: Qwen/Qwen3-8B            # or a local /data path if pre-downloaded
+dtype: bfloat16
+device_map: {"": 0}
+checkpoint_quant: none
+source_layers: workspace
+dim_batch: 8
+max_seq_len: 128
+skip_first: 16
+n_prompts: 100
+corpus: /data/corpus_real.txt    # real corpus already present on h202
+notes: "Qwen3-8B dense. First research-quality target on a single freed GPU."

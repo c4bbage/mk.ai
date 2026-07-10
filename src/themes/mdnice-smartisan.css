@@ -1,0 +1,780 @@
+/* ===== Mdnice · 锤子便签  (源自 wechat.jeffjade.com / mdnice) ===== */
+/*默认样式，最佳实践*/
+
+/*全局属性*/
+.theme-mdnice-smartisan .markdown-body {
+  font-size: 16px;
+  color: black;
+  padding: 0 10px;
+  line-height: 1.6;
+  word-spacing: 0px;
+  letter-spacing: 0px;
+  word-break: break-word;
+  word-wrap: break-word;
+  text-align: left;
+  font-family: Optima-Regular, Optima, PingFangSC-light, PingFangTC-light, 'PingFang SC', Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+  /* margin-top: -10px; 解决开头空隙过大问题*/
+}
+
+/*段落*/
+.theme-mdnice-smartisan .markdown-body p {
+  font-size: 16px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  margin: 0;
+  line-height: 26px;
+  color: black;
+}
+
+/*标题*/
+.theme-mdnice-smartisan .markdown-body h1,
+.theme-mdnice-smartisan .markdown-body h2,
+.theme-mdnice-smartisan .markdown-body h3,
+.theme-mdnice-smartisan .markdown-body h4,
+.theme-mdnice-smartisan .markdown-body h5,
+.theme-mdnice-smartisan .markdown-body h6 {
+  margin-top: 30px;
+  margin-bottom: 15px;
+  padding: 0px;
+  font-weight: bold;
+  color: black;
+}
+.theme-mdnice-smartisan .markdown-body h1 {
+  font-size: 24px;
+}
+.theme-mdnice-smartisan .markdown-body h2 {
+  font-size: 22px;
+}
+.theme-mdnice-smartisan .markdown-body h3 {
+  font-size: 20px;
+}
+.theme-mdnice-smartisan .markdown-body h4 {
+  font-size: 18px;
+}
+.theme-mdnice-smartisan .markdown-body h5 {
+  font-size: 16px;
+}
+.theme-mdnice-smartisan .markdown-body h6 {
+  font-size: 16px;
+}
+
+.theme-mdnice-smartisan .markdown-body h1 .prefix,
+.theme-mdnice-smartisan .markdown-body h2 .prefix,
+.theme-mdnice-smartisan .markdown-body h3 .prefix,
+.theme-mdnice-smartisan .markdown-body h4 .prefix,
+.theme-mdnice-smartisan .markdown-body h5 .prefix,
+.theme-mdnice-smartisan .markdown-body h6 .prefix {
+  display: none;
+}
+
+.theme-mdnice-smartisan .markdown-body h1 .suffix
+.theme-mdnice-smartisan .markdown-body h2 .suffix,
+.theme-mdnice-smartisan .markdown-body h3 .suffix,
+.theme-mdnice-smartisan .markdown-body h4 .suffix,
+.theme-mdnice-smartisan .markdown-body h5 .suffix,
+.theme-mdnice-smartisan .markdown-body h6 .suffix {
+  display: none;
+}
+
+/*列表*/
+.theme-mdnice-smartisan .markdown-body ul,
+.theme-mdnice-smartisan .markdown-body ol {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding-left: 25px;
+  color: black;
+}
+.theme-mdnice-smartisan .markdown-body ul {
+  list-style-type: disc;
+}
+.theme-mdnice-smartisan .markdown-body ul ul {
+  list-style-type: square;
+}
+
+.theme-mdnice-smartisan .markdown-body ol {
+  list-style-type: decimal;
+}
+
+.theme-mdnice-smartisan .markdown-body li section {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  line-height: 26px;
+  text-align: left;
+  color: rgb(1,1,1); /* 只要是纯黑色微信编辑器就会把color这个属性吞掉。。。*/
+  font-weight: 500;
+}
+
+/*引用*/
+.theme-mdnice-smartisan .markdown-body blockquote {
+  border: none;
+}
+
+.theme-mdnice-smartisan .markdown-body .multiquote-1 {
+  display: block;
+  font-size: 0.9em;
+  overflow: auto;
+  overflow-scrolling: touch;
+  border-left: 3px solid rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.05);
+  color: #6a737d;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 20px;
+  padding-right: 10px;
+  margin-bottom: 20px;
+  margin-top: 20px;
+}
+
+.theme-mdnice-smartisan .markdown-body .multiquote-1 p {
+  margin: 0px;
+  color: black;
+  line-height: 26px;
+}
+
+.theme-mdnice-smartisan .markdown-body .multiquote-2 {
+  box-shadow: 1px 1px 10px rgba(0,0,0,0.2);
+  padding: 20px;
+  margin-bottom: 20px;
+  margin-top: 20px;
+}
+
+.theme-mdnice-smartisan .markdown-body .multiquote-3 {
+  box-shadow: 1px 1px 10px rgba(0,0,0,0.2);
+  padding: 20px;
+  margin-bottom: 20px;
+  margin-top: 20px;
+}
+
+.theme-mdnice-smartisan .markdown-body .multiquote-3 p {
+  text-align: center;
+}
+
+.theme-mdnice-smartisan .markdown-body .multiquote-3 h3 {
+  text-align: center;
+}
+
+.theme-mdnice-smartisan .markdown-body .table-of-contents a {
+  border: none;
+  color: black;
+  font-weight: normal;
+}
+
+/*链接*/
+.theme-mdnice-smartisan .markdown-body a {
+  text-decoration: none;
+  color: #1e6bb8;
+  word-wrap: break-word;
+  font-weight: bold;
+  border-bottom: 1px solid #1e6bb8;
+}
+
+/*加粗*/
+.theme-mdnice-smartisan .markdown-body strong {
+  font-weight: bold;
+  color: black;
+}
+
+/*斜体*/
+.theme-mdnice-smartisan .markdown-body em {
+  font-style: italic;
+  color: black;
+}
+
+/*加粗斜体*/
+.theme-mdnice-smartisan .markdown-body em strong {
+  font-weight: bold;
+  color: black;
+}
+
+/*删除线*/
+.theme-mdnice-smartisan .markdown-body del {
+  font-style: italic;
+  color: black;
+}
+
+/*分隔线*/
+.theme-mdnice-smartisan .markdown-body hr {
+  height: 1px;
+  margin: 0;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border: none;
+  border-top: 1px solid black;
+}
+
+/*代码块*/
+.theme-mdnice-smartisan .markdown-body pre {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+.theme-mdnice-smartisan .markdown-body pre code {
+  display: -webkit-box;
+  font-family: Operator Mono, Consolas, Monaco, Menlo, monospace;
+  border-radius: 0px;
+  font-size: 12px;
+  -webkit-overflow-scrolling: touch;
+}
+.theme-mdnice-smartisan .markdown-body pre code span {
+  line-height: 26px;
+}
+
+/*行内代码*/
+.theme-mdnice-smartisan .markdown-body p code,
+.theme-mdnice-smartisan .markdown-body li code {
+  font-size: 14px;
+  word-wrap: break-word;
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin: 0 2px;
+  color: #1e6bb8;
+  background-color: rgba(27,31,35,.05);
+  font-family: Operator Mono, Consolas, Monaco, Menlo, monospace;
+  word-break: break-all;
+}
+
+/*图片*/
+.theme-mdnice-smartisan .markdown-body img {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+}
+
+/*图片*/
+.theme-mdnice-smartisan .markdown-body figure {
+  margin: 0;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+/*图片描述文字*/
+.theme-mdnice-smartisan .markdown-body figcaption {
+  margin-top: 5px;
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+}
+
+
+/*表格容器 */
+.theme-mdnice-smartisan .markdown-body .table-container{
+  overflow-x: auto;
+}
+
+/*表格*/
+.theme-mdnice-smartisan .markdown-body table {
+  display: table;
+  text-align: left;
+}
+.theme-mdnice-smartisan .markdown-body tbody {
+  border: 0;
+}
+
+.theme-mdnice-smartisan .markdown-body table tr {
+  border: 0;
+  border-top: 1px solid #ccc;
+  background-color: white;
+}
+
+.theme-mdnice-smartisan .markdown-body table tr:nth-child(2n) {
+  background-color: #F8F8F8;
+}
+
+.theme-mdnice-smartisan .markdown-body table tr th,
+.theme-mdnice-smartisan .markdown-body table tr td {
+  font-size: 16px;
+  border: 1px solid #ccc;
+  padding: 5px 10px;
+  text-align: left;
+}
+
+.theme-mdnice-smartisan .markdown-body table tr th {
+  font-weight: bold;
+  background-color: #f0f0f0;
+}
+
+/* 表格最小列宽4个汉字 */
+.theme-mdnice-smartisan .markdown-body table tr th:nth-of-type(n),
+.theme-mdnice-smartisan .markdown-body table tr td:nth-of-type(n){
+  min-width:85px;
+}
+
+.theme-mdnice-smartisan .markdown-body .footnote-word {
+  color: #1e6bb8;
+  font-weight: bold;
+}
+
+.theme-mdnice-smartisan .markdown-body .footnote-ref {
+  color: #1e6bb8;
+  font-weight: bold;
+}
+
+.theme-mdnice-smartisan .markdown-body .footnote-item {
+  display: flex;
+}
+
+.theme-mdnice-smartisan .markdown-body .footnote-num {
+  display: inline;
+  width: 10%; /*神奇，50px就不可以*/
+  background: none;
+  font-size: 80%;
+  opacity: 0.6;
+  line-height: 26px;
+  font-family: ptima-Regular, Optima, PingFangSC-light, PingFangTC-light, 'PingFang SC', Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+}
+
+.theme-mdnice-smartisan .markdown-body .footnote-item p {
+  display: inline;
+  font-size: 14px;
+  width: 90%;
+  padding: 0px;
+  margin: 0;
+  line-height: 26px;
+  color: black;
+  word-break:break-all;
+  width: calc(100% - 50px)
+}
+
+.theme-mdnice-smartisan .markdown-body sub, sup {
+  line-height: 0;
+}
+
+.theme-mdnice-smartisan .markdown-body .footnotes-sep:before {
+  content: "参考资料";
+  display: block;
+}
+
+/* 解决公式问题 */
+.theme-mdnice-smartisan .markdown-body .block-equation {
+  display:block;
+  text-align: center;
+  overflow: auto;
+  display: block;
+  -webkit-overflow-scrolling: touch;
+}
+
+.theme-mdnice-smartisan .markdown-body .block-equation svg {
+  max-width: 300% !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.theme-mdnice-smartisan .markdown-body .inline-equation {
+}
+
+.theme-mdnice-smartisan .markdown-body .inline-equation svg {
+}
+
+.theme-mdnice-smartisan .markdown-body .imageflow-layer1 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  white-space: normal;
+  border: 0px none;
+  padding: 0px;
+  overflow: hidden;
+}
+
+.theme-mdnice-smartisan .markdown-body .imageflow-layer2 {
+  white-space: nowrap;
+  width: 100%;
+  overflow-x: scroll;
+}
+
+.theme-mdnice-smartisan .markdown-body .imageflow-layer3 {
+  display: inline-block;
+  word-wrap: break-word;
+  white-space: normal;
+  vertical-align: middle;
+  width: 100%;
+}
+
+.theme-mdnice-smartisan .markdown-body .imageflow-img {
+  display: inline-block;
+}
+
+.theme-mdnice-smartisan .markdown-body .imageflow-caption {
+  text-align: center;
+  margin-top: 0px;
+  padding-top: 0px;
+  color: #888;
+}
+
+.theme-mdnice-smartisan .markdown-body .nice-suffix-juejin-container {
+  margin-top: 20px !important;
+}
+
+.theme-mdnice-smartisan .markdown-body figure a {
+  border: none;
+}
+
+.theme-mdnice-smartisan .markdown-body figure a img {
+  margin: 0px;
+}
+
+.theme-mdnice-smartisan .markdown-body figure {
+  display:flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 图片链接嵌套 */
+.theme-mdnice-smartisan .markdown-body figure a {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 图片链接嵌套，图片解释 */
+.theme-mdnice-smartisan .markdown-body figure a + figcaption {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: -35px;
+  background: rgba(0,0,0,0.7);
+  color: white;
+  line-height: 35px;
+  z-index: 20;
+}
+
+
+/* ===== 主题叠加层 ===== */
+/* 自定义样式，实时生效，浏览器实时缓存 */
+
+/* 全局属性
+ * 页边距 padding: 30px;
+ * 全文字体 font-family: ptima-Regular;
+ * 英文换行 word-break: break-all;
+ */
+
+.nice-wx-box{
+  padding: 0;
+  margin:0;
+}
+
+.theme-mdnice-smartisan .markdown-body {
+  background-color: #fbf7ee;
+    /* 注：请在大括号内改写！！！ */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+  'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+  'Noto Color Emoji' !important;
+  color: #635753 !important;
+  padding: 10px 10px;
+}
+
+/* 段落，下方未标注标签参数均同此处
+ * 上边距 margin-top: 5px;
+ * 下边距 margin-bottom: 5px;
+ * 行高 line-height: 26px;
+ * 词间距 word-spacing: 3px;
+ * 字间距 letter-spacing: 3px;
+ * 对齐 text-align: left;
+ * 颜色 color: #3e3e3e;
+ * 字体大小 font-size: 16px;
+ * 首行缩进 text-indent: 2em;
+ */
+.theme-mdnice-smartisan .markdown-body p {
+  	color: #635753;
+    /* 注：请在大括号内改写！！！ */
+  line-height: 2
+}
+
+/* 一级标题 */
+.theme-mdnice-smartisan .markdown-body h1 {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 一级标题内容 */
+.theme-mdnice-smartisan .markdown-body h1 .content {
+  color: #635753;
+    /* 注：请在大括号内改写！！！ */
+}
+
+/* 一级标题前缀 */
+.theme-mdnice-smartisan .markdown-body h1 .prefix {
+  color: #635753;
+    /* 注：请在大括号内改写！！！ */
+}
+
+/* 一级标题后缀 */
+.theme-mdnice-smartisan .markdown-body h1 .suffix {
+  color: #635753;
+    /* 注：请在大括号内改写！！！ */
+}
+
+/* 二级标题 */
+.theme-mdnice-smartisan .markdown-body h2 {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 二级标题内容 */
+.theme-mdnice-smartisan .markdown-body h2 .content {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 二级标题前缀 */
+.theme-mdnice-smartisan .markdown-body h2 .prefix {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 二级标题后缀 */
+.theme-mdnice-smartisan .markdown-body h2 .suffix {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 三级标题 */
+.theme-mdnice-smartisan .markdown-body h3 {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 三级标题内容 */
+.theme-mdnice-smartisan .markdown-body h3 .content {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 三级标题前缀 */
+.theme-mdnice-smartisan .markdown-body h3 .prefix {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 三级标题后缀 */
+.theme-mdnice-smartisan .markdown-body h3 .suffix {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 无序列表整体样式
+ * list-style-type: square|circle|disc;
+ */
+.theme-mdnice-smartisan .markdown-body ul {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 有序列表整体样式
+ * list-style-type: upper-roman|lower-greek|lower-alpha;
+ */
+.theme-mdnice-smartisan .markdown-body ol {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 列表内容，不要设置li
+ */
+.theme-mdnice-smartisan .markdown-body li section {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 一级引用
+ * 左边缘颜色 border-left-color: black;
+ * 背景色 background: gray;
+ */
+.theme-mdnice-smartisan .markdown-body .multiquote-1 {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 一级引用文字 */
+.theme-mdnice-smartisan .markdown-body .multiquote-1 p {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 二级引用
+ */
+.theme-mdnice-smartisan .markdown-body .multiquote-2 {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 二级引用文字 */
+.theme-mdnice-smartisan .markdown-body .multiquote-2 p {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 三级引用
+ */
+.theme-mdnice-smartisan .markdown-body .multiquote-3 {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 三级引用文字 */
+.theme-mdnice-smartisan .markdown-body .multiquote-3 p {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 链接 
+ * border-bottom: 1px solid #009688;
+ */
+.theme-mdnice-smartisan .markdown-body a {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+  border-bottom: 1px solid #ebdfd5;
+}
+
+/* 加粗 */
+.theme-mdnice-smartisan .markdown-body strong {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 斜体 */
+.theme-mdnice-smartisan .markdown-body em {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 加粗斜体 */
+.theme-mdnice-smartisan .markdown-body em strong {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 删除线 */
+.theme-mdnice-smartisan .markdown-body del {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 分隔线
+ * 粗细、样式和颜色
+ * border-top: 1px solid #3e3e3e;
+ */
+.theme-mdnice-smartisan .markdown-body hr {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 图片
+ * 宽度 width: 80%;
+ * 居中 margin: 0 auto;
+ * 居左 margin: 0 0;
+ */
+.theme-mdnice-smartisan .markdown-body img {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 行内代码 */
+.theme-mdnice-smartisan .markdown-body p code, .theme-mdnice-smartisan .markdown-body li code {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+ 
+}
+
+/* 
+ * 代码块不换行 display: -webkit-box !important;
+ * 代码块换行 display: block;
+ */
+.theme-mdnice-smartisan .markdown-body pre code {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+  
+}
+
+/*
+ * 表格内的单元格
+ * 字体大小 font-size: 16px;
+ * 边框 border: 1px solid #ccc;
+ * 内边距 padding: 5px 10px;
+ */
+.theme-mdnice-smartisan .markdown-body table tr th,
+.theme-mdnice-smartisan .markdown-body table tr td {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 
+ * 某一列表格列宽控制
+ * n 可以修改为具体数字，不修改时表示所有列
+ * 最小列宽 min-width: 85px;
+ */
+.theme-mdnice-smartisan .markdown-body table tr th:nth-of-type(n),
+.theme-mdnice-smartisan .markdown-body table tr td:nth-of-type(n){
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 脚注文字 */
+.theme-mdnice-smartisan .markdown-body .footnote-word {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 脚注上标 */
+.theme-mdnice-smartisan .markdown-body .footnote-ref {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* "参考资料"四个字 
+ * 内容 content: "参考资料";
+ */
+.theme-mdnice-smartisan .markdown-body .footnotes-sep:before {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 参考资料编号 */
+.theme-mdnice-smartisan .markdown-body .footnote-num {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 参考资料文字 */
+.theme-mdnice-smartisan .markdown-body .footnote-item p { 
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 参考资料解释 */
+.theme-mdnice-smartisan .markdown-body .footnote-item p em {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 行间公式
+ * 最大宽度 max-width: 300% !important;
+ */
+.theme-mdnice-smartisan .markdown-body .block-equation svg {
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+/* 行内公式
+ */
+.theme-mdnice-smartisan .markdown-body .inline-equation svg {  
+    /* 注：请在大括号内改写！！！ */
+  color: #635753;
+}
+
+.theme-mdnice-smartisan .markdown-body img{
+  width: 100%;
+  box-shadow: 14px 14px 28px #e6e6e6, -14px -14px 28px #fff;
+  border: 9px solid #ffffff;
+  outline: 1px solid #ebdfd5;
+
+}
+
+.theme-mdnice-smartisan .markdown-body .custom::before {
+ background-color: #fbf7ee !important;
+
+}
+
+.theme-mdnice-smartisan .markdown-body code {
+  background-color: #fbf7ee !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+  'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+  'Noto Color Emoji' !important;
+}

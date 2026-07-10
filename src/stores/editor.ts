@@ -18,6 +18,7 @@ interface EditorStore {
   openTab: (doc: { content: string; fileName: string; filePath?: string }) => string;
   closeTab: (id: string) => void;
   switchTab: (id: string) => void;
+  reorderTabs: (fromId: string, toId: string) => void;
 
   // ─── Active document (shadow fields, kept in sync with active tab) ───
   content: string;
@@ -32,6 +33,9 @@ interface EditorStore {
   // ─── Theme ───
   theme: string;
   setTheme: (theme: string) => void;
+  // ─── Code Theme (与文章主题正交，控制代码块高亮) ───
+  codeTheme: string;
+  setCodeTheme: (codeTheme: string) => void;
 
   // ─── Font ───
   fontSize: number;
@@ -70,6 +74,19 @@ interface EditorStore {
   togglePreview: () => void;
   toggleOutline: () => void;
   toggleFileTree: () => void;
+
+  // ─── Cursor / selection (runtime, not persisted) ───
+  cursor: { line: number; col: number };
+  selection: { chars: number; words: number };
+  setCursor: (cursor: { line: number; col: number }) => void;
+  setSelection: (selection: { chars: number; words: number }) => void;
+
+  // ─── Recent files & theme usage (persisted) ───
+  recentFiles: string[];
+  themeUsage: Record<string, number>;
+  addRecentFile: (path: string) => void;
+  clearRecentFiles: () => void;
+  recordThemeUsage: (theme: string) => void;
 
   // ─── Reset ───
   reset: () => void;
@@ -163,6 +180,18 @@ export const useEditorStore = create<EditorStore>()(
         }
       },
 
+      reorderTabs: (fromId, toId) => {
+        const { tabs } = get();
+        if (fromId === toId) return;
+        const fromIdx = tabs.findIndex(t => t.id === fromId);
+        const toIdx = tabs.findIndex(t => t.id === toId);
+        if (fromIdx === -1 || toIdx === -1) return;
+        const newTabs = [...tabs];
+        const [moved] = newTabs.splice(fromIdx, 1);
+        newTabs.splice(toIdx, 0, moved);
+        set({ tabs: newTabs });
+      },
+
       // ─── Document setters (write to active tab + sync shadow) ───
       setContent: (content) => {
         const { activeTabId, tabs } = get();
@@ -190,6 +219,9 @@ export const useEditorStore = create<EditorStore>()(
       // ─── Theme ───
       theme: 'github',
       setTheme: (theme) => set({ theme }),
+      // ─── Code Theme ───
+      codeTheme: 'atom-one-dark',
+      setCodeTheme: (codeTheme) => set({ codeTheme }),
 
       // ─── Font ───
       fontSize: 16,
@@ -233,6 +265,24 @@ export const useEditorStore = create<EditorStore>()(
       toggleOutline: () => set((state) => ({ showOutline: !state.showOutline })),
       toggleFileTree: () => set((state) => ({ showFileTree: !state.showFileTree })),
 
+      // ─── Cursor / selection (runtime) ───
+      cursor: { line: 1, col: 1 },
+      selection: { chars: 0, words: 0 },
+      setCursor: (cursor) => set({ cursor }),
+      setSelection: (selection) => set({ selection }),
+
+      // ─── Recent files & theme usage ───
+      recentFiles: [],
+      themeUsage: {},
+      addRecentFile: (path) => set((state) => {
+        const filtered = state.recentFiles.filter(p => p !== path);
+        return { recentFiles: [path, ...filtered].slice(0, 15) };
+      }),
+      clearRecentFiles: () => set({ recentFiles: [] }),
+      recordThemeUsage: (theme) => set((state) => ({
+        themeUsage: { ...state.themeUsage, [theme]: (state.themeUsage[theme] || 0) + 1 },
+      })),
+
       // ─── Reset (reset active tab) ───
       reset: () => {
         const { activeTabId, tabs } = get();
@@ -256,6 +306,7 @@ export const useEditorStore = create<EditorStore>()(
       name: 'md-ai-settings-v2',
       partialize: (state) => ({
         theme: state.theme,
+        codeTheme: state.codeTheme,
         fontSize: state.fontSize,
         fontId: state.fontId,
         codeFontId: state.codeFontId,
@@ -268,6 +319,8 @@ export const useEditorStore = create<EditorStore>()(
         showPreview: state.showPreview,
         showOutline: state.showOutline,
         showFileTree: state.showFileTree,
+        recentFiles: state.recentFiles,
+        themeUsage: state.themeUsage,
       }),
     }
   )

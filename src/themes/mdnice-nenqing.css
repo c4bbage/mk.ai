@@ -1,0 +1,663 @@
+/* ===== Mdnice · 嫩青  (源自 wechat.jeffjade.com / mdnice) ===== */
+/*默认样式，最佳实践*/
+
+/*全局属性*/
+.theme-mdnice-nenqing .markdown-body {
+  font-size: 16px;
+  color: black;
+  padding: 0 10px;
+  line-height: 1.6;
+  word-spacing: 0px;
+  letter-spacing: 0px;
+  word-break: break-word;
+  word-wrap: break-word;
+  text-align: left;
+  font-family: Optima-Regular, Optima, PingFangSC-light, PingFangTC-light, 'PingFang SC', Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+  /* margin-top: -10px; 解决开头空隙过大问题*/
+}
+
+/*段落*/
+.theme-mdnice-nenqing .markdown-body p {
+  font-size: 16px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  margin: 0;
+  line-height: 26px;
+  color: black;
+}
+
+/*标题*/
+.theme-mdnice-nenqing .markdown-body h1,
+.theme-mdnice-nenqing .markdown-body h2,
+.theme-mdnice-nenqing .markdown-body h3,
+.theme-mdnice-nenqing .markdown-body h4,
+.theme-mdnice-nenqing .markdown-body h5,
+.theme-mdnice-nenqing .markdown-body h6 {
+  margin-top: 30px;
+  margin-bottom: 15px;
+  padding: 0px;
+  font-weight: bold;
+  color: black;
+}
+.theme-mdnice-nenqing .markdown-body h1 {
+  font-size: 24px;
+}
+.theme-mdnice-nenqing .markdown-body h2 {
+  font-size: 22px;
+}
+.theme-mdnice-nenqing .markdown-body h3 {
+  font-size: 20px;
+}
+.theme-mdnice-nenqing .markdown-body h4 {
+  font-size: 18px;
+}
+.theme-mdnice-nenqing .markdown-body h5 {
+  font-size: 16px;
+}
+.theme-mdnice-nenqing .markdown-body h6 {
+  font-size: 16px;
+}
+
+.theme-mdnice-nenqing .markdown-body h1 .prefix,
+.theme-mdnice-nenqing .markdown-body h2 .prefix,
+.theme-mdnice-nenqing .markdown-body h3 .prefix,
+.theme-mdnice-nenqing .markdown-body h4 .prefix,
+.theme-mdnice-nenqing .markdown-body h5 .prefix,
+.theme-mdnice-nenqing .markdown-body h6 .prefix {
+  display: none;
+}
+
+.theme-mdnice-nenqing .markdown-body h1 .suffix
+.theme-mdnice-nenqing .markdown-body h2 .suffix,
+.theme-mdnice-nenqing .markdown-body h3 .suffix,
+.theme-mdnice-nenqing .markdown-body h4 .suffix,
+.theme-mdnice-nenqing .markdown-body h5 .suffix,
+.theme-mdnice-nenqing .markdown-body h6 .suffix {
+  display: none;
+}
+
+/*列表*/
+.theme-mdnice-nenqing .markdown-body ul,
+.theme-mdnice-nenqing .markdown-body ol {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding-left: 25px;
+  color: black;
+}
+.theme-mdnice-nenqing .markdown-body ul {
+  list-style-type: disc;
+}
+.theme-mdnice-nenqing .markdown-body ul ul {
+  list-style-type: square;
+}
+
+.theme-mdnice-nenqing .markdown-body ol {
+  list-style-type: decimal;
+}
+
+.theme-mdnice-nenqing .markdown-body li section {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  line-height: 26px;
+  text-align: left;
+  color: rgb(1,1,1); /* 只要是纯黑色微信编辑器就会把color这个属性吞掉。。。*/
+  font-weight: 500;
+}
+
+/*引用*/
+.theme-mdnice-nenqing .markdown-body blockquote {
+  border: none;
+}
+
+.theme-mdnice-nenqing .markdown-body .multiquote-1 {
+  display: block;
+  font-size: 0.9em;
+  overflow: auto;
+  overflow-scrolling: touch;
+  border-left: 3px solid rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.05);
+  color: #6a737d;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 20px;
+  padding-right: 10px;
+  margin-bottom: 20px;
+  margin-top: 20px;
+}
+
+.theme-mdnice-nenqing .markdown-body .multiquote-1 p {
+  margin: 0px;
+  color: black;
+  line-height: 26px;
+}
+
+.theme-mdnice-nenqing .markdown-body .multiquote-2 {
+  box-shadow: 1px 1px 10px rgba(0,0,0,0.2);
+  padding: 20px;
+  margin-bottom: 20px;
+  margin-top: 20px;
+}
+
+.theme-mdnice-nenqing .markdown-body .multiquote-3 {
+  box-shadow: 1px 1px 10px rgba(0,0,0,0.2);
+  padding: 20px;
+  margin-bottom: 20px;
+  margin-top: 20px;
+}
+
+.theme-mdnice-nenqing .markdown-body .multiquote-3 p {
+  text-align: center;
+}
+
+.theme-mdnice-nenqing .markdown-body .multiquote-3 h3 {
+  text-align: center;
+}
+
+.theme-mdnice-nenqing .markdown-body .table-of-contents a {
+  border: none;
+  color: black;
+  font-weight: normal;
+}
+
+/*链接*/
+.theme-mdnice-nenqing .markdown-body a {
+  text-decoration: none;
+  color: #1e6bb8;
+  word-wrap: break-word;
+  font-weight: bold;
+  border-bottom: 1px solid #1e6bb8;
+}
+
+/*加粗*/
+.theme-mdnice-nenqing .markdown-body strong {
+  font-weight: bold;
+  color: black;
+}
+
+/*斜体*/
+.theme-mdnice-nenqing .markdown-body em {
+  font-style: italic;
+  color: black;
+}
+
+/*加粗斜体*/
+.theme-mdnice-nenqing .markdown-body em strong {
+  font-weight: bold;
+  color: black;
+}
+
+/*删除线*/
+.theme-mdnice-nenqing .markdown-body del {
+  font-style: italic;
+  color: black;
+}
+
+/*分隔线*/
+.theme-mdnice-nenqing .markdown-body hr {
+  height: 1px;
+  margin: 0;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border: none;
+  border-top: 1px solid black;
+}
+
+/*代码块*/
+.theme-mdnice-nenqing .markdown-body pre {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+.theme-mdnice-nenqing .markdown-body pre code {
+  display: -webkit-box;
+  font-family: Operator Mono, Consolas, Monaco, Menlo, monospace;
+  border-radius: 0px;
+  font-size: 12px;
+  -webkit-overflow-scrolling: touch;
+}
+.theme-mdnice-nenqing .markdown-body pre code span {
+  line-height: 26px;
+}
+
+/*行内代码*/
+.theme-mdnice-nenqing .markdown-body p code,
+.theme-mdnice-nenqing .markdown-body li code {
+  font-size: 14px;
+  word-wrap: break-word;
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin: 0 2px;
+  color: #1e6bb8;
+  background-color: rgba(27,31,35,.05);
+  font-family: Operator Mono, Consolas, Monaco, Menlo, monospace;
+  word-break: break-all;
+}
+
+/*图片*/
+.theme-mdnice-nenqing .markdown-body img {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+}
+
+/*图片*/
+.theme-mdnice-nenqing .markdown-body figure {
+  margin: 0;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+/*图片描述文字*/
+.theme-mdnice-nenqing .markdown-body figcaption {
+  margin-top: 5px;
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+}
+
+
+/*表格容器 */
+.theme-mdnice-nenqing .markdown-body .table-container{
+  overflow-x: auto;
+}
+
+/*表格*/
+.theme-mdnice-nenqing .markdown-body table {
+  display: table;
+  text-align: left;
+}
+.theme-mdnice-nenqing .markdown-body tbody {
+  border: 0;
+}
+
+.theme-mdnice-nenqing .markdown-body table tr {
+  border: 0;
+  border-top: 1px solid #ccc;
+  background-color: white;
+}
+
+.theme-mdnice-nenqing .markdown-body table tr:nth-child(2n) {
+  background-color: #F8F8F8;
+}
+
+.theme-mdnice-nenqing .markdown-body table tr th,
+.theme-mdnice-nenqing .markdown-body table tr td {
+  font-size: 16px;
+  border: 1px solid #ccc;
+  padding: 5px 10px;
+  text-align: left;
+}
+
+.theme-mdnice-nenqing .markdown-body table tr th {
+  font-weight: bold;
+  background-color: #f0f0f0;
+}
+
+/* 表格最小列宽4个汉字 */
+.theme-mdnice-nenqing .markdown-body table tr th:nth-of-type(n),
+.theme-mdnice-nenqing .markdown-body table tr td:nth-of-type(n){
+  min-width:85px;
+}
+
+.theme-mdnice-nenqing .markdown-body .footnote-word {
+  color: #1e6bb8;
+  font-weight: bold;
+}
+
+.theme-mdnice-nenqing .markdown-body .footnote-ref {
+  color: #1e6bb8;
+  font-weight: bold;
+}
+
+.theme-mdnice-nenqing .markdown-body .footnote-item {
+  display: flex;
+}
+
+.theme-mdnice-nenqing .markdown-body .footnote-num {
+  display: inline;
+  width: 10%; /*神奇，50px就不可以*/
+  background: none;
+  font-size: 80%;
+  opacity: 0.6;
+  line-height: 26px;
+  font-family: ptima-Regular, Optima, PingFangSC-light, PingFangTC-light, 'PingFang SC', Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+}
+
+.theme-mdnice-nenqing .markdown-body .footnote-item p {
+  display: inline;
+  font-size: 14px;
+  width: 90%;
+  padding: 0px;
+  margin: 0;
+  line-height: 26px;
+  color: black;
+  word-break:break-all;
+  width: calc(100% - 50px)
+}
+
+.theme-mdnice-nenqing .markdown-body sub, sup {
+  line-height: 0;
+}
+
+.theme-mdnice-nenqing .markdown-body .footnotes-sep:before {
+  content: "参考资料";
+  display: block;
+}
+
+/* 解决公式问题 */
+.theme-mdnice-nenqing .markdown-body .block-equation {
+  display:block;
+  text-align: center;
+  overflow: auto;
+  display: block;
+  -webkit-overflow-scrolling: touch;
+}
+
+.theme-mdnice-nenqing .markdown-body .block-equation svg {
+  max-width: 300% !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.theme-mdnice-nenqing .markdown-body .inline-equation {
+}
+
+.theme-mdnice-nenqing .markdown-body .inline-equation svg {
+}
+
+.theme-mdnice-nenqing .markdown-body .imageflow-layer1 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  white-space: normal;
+  border: 0px none;
+  padding: 0px;
+  overflow: hidden;
+}
+
+.theme-mdnice-nenqing .markdown-body .imageflow-layer2 {
+  white-space: nowrap;
+  width: 100%;
+  overflow-x: scroll;
+}
+
+.theme-mdnice-nenqing .markdown-body .imageflow-layer3 {
+  display: inline-block;
+  word-wrap: break-word;
+  white-space: normal;
+  vertical-align: middle;
+  width: 100%;
+}
+
+.theme-mdnice-nenqing .markdown-body .imageflow-img {
+  display: inline-block;
+}
+
+.theme-mdnice-nenqing .markdown-body .imageflow-caption {
+  text-align: center;
+  margin-top: 0px;
+  padding-top: 0px;
+  color: #888;
+}
+
+.theme-mdnice-nenqing .markdown-body .nice-suffix-juejin-container {
+  margin-top: 20px !important;
+}
+
+.theme-mdnice-nenqing .markdown-body figure a {
+  border: none;
+}
+
+.theme-mdnice-nenqing .markdown-body figure a img {
+  margin: 0px;
+}
+
+.theme-mdnice-nenqing .markdown-body figure {
+  display:flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 图片链接嵌套 */
+.theme-mdnice-nenqing .markdown-body figure a {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 图片链接嵌套，图片解释 */
+.theme-mdnice-nenqing .markdown-body figure a + figcaption {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: -35px;
+  background: rgba(0,0,0,0.7);
+  color: white;
+  line-height: 35px;
+  z-index: 20;
+}
+
+
+/* ===== 主题叠加层 ===== */
+/* 全局属性
+ * 页边距 padding: 30px;
+ * 全文字体 font-family: ptima-Regular;
+ * 英文换行 word-break: break-all;
+ */
+.theme-mdnice-nenqing .markdown-body {
+}
+
+/* 段落，下方未标注标签参数均同此处
+ * 上边距 margin-top: 5px;
+ * 下边距 margin-bottom: 5px;
+ * 行高 line-height: 26px;
+ * 词间距 word-spacing: 3px;
+ * 字间距 letter-spacing: 3px;
+ * 对齐 text-align: left;
+ * 颜色 color: #3e3e3e;
+ * 字体大小 font-size: 16px;
+ * 首行缩进 text-indent: 2em;
+ */
+.theme-mdnice-nenqing .markdown-body p {
+  color: rgb(89,89,89);
+}
+
+/* 一级标题 */
+.theme-mdnice-nenqing .markdown-body h1 {
+  color: rgb(89,89,89);
+}
+
+/* 一级标题内容 */
+.theme-mdnice-nenqing .markdown-body h1 .content {
+}
+
+/* 一级标题修饰 请参考有实例的主题 */
+.theme-mdnice-nenqing .markdown-body h1:after {
+}
+
+/* 二级标题 */
+.theme-mdnice-nenqing .markdown-body h2 {
+  border-bottom: 2px solid rgb(89,89,89);
+  margin-bottom: 30px;
+  color: rgb(89,89,89);
+}
+
+/* 二级标题内容 */
+.theme-mdnice-nenqing .markdown-body h2 .content {
+  font-size: 22px;
+  display: inline-block;
+  border-bottom: 2px solid rgb(89,89,89);
+}
+
+/* 二级标题修饰 请参考有实例的主题 */
+.theme-mdnice-nenqing .markdown-body h2:after {
+}
+
+/* 三级标题 */
+.theme-mdnice-nenqing .markdown-body h3 {
+  color: rgb(89,89,89);
+}
+
+/* 三级标题内容 */
+.theme-mdnice-nenqing .markdown-body h3 .content {
+}
+
+/* 三级标题修饰 请参考有实例的主题 */
+.theme-mdnice-nenqing .markdown-body h3:after {
+}
+
+/* 无序列表整体样式
+ * list-style-type: square|circle|disc;
+ */
+.theme-mdnice-nenqing .markdown-body ul {
+}
+
+/* 有序列表整体样式
+ * list-style-type: upper-roman|lower-greek|lower-alpha;
+ */
+.theme-mdnice-nenqing .markdown-body ol {
+}
+
+/* 列表内容，不要设置li
+ */
+.theme-mdnice-nenqing .markdown-body li section {
+}
+
+/* 引用
+* 左边缘颜色 border-left-color: black;
+* 背景色 background: gray;
+*/
+.theme-mdnice-nenqing .markdown-body .multiquote-1 {
+  font-style: normal;
+  padding: 10px;
+  position: relative;
+  line-height: 1.8;
+  text-indent: 0;
+  border: none;
+  color: #888;
+}
+
+.theme-mdnice-nenqing .markdown-body .multiquote-1:before {
+  content: "“";
+  display: inline;
+  color: #555555;
+  font-size: 4em;
+  font-family: Arial, serif;
+  line-height: 1em;
+  font-weight: 700;
+}
+
+/* 引用文字 */
+.theme-mdnice-nenqing .markdown-body .multiquote-1 p {
+  display: inline;
+}
+
+/* 链接 
+ * border-bottom: 1px solid #009688;
+ */
+.theme-mdnice-nenqing .markdown-body a {
+  color: rgb(71, 193, 168);
+  border-bottom: 1px solid rgb(71, 193, 168);
+}
+
+/* 加粗 */
+.theme-mdnice-nenqing .markdown-body strong {
+  color: rgb(71, 193, 168);
+}
+
+/* 斜体 */
+.theme-mdnice-nenqing .markdown-body em {
+  color: rgb(71, 193, 168);
+}
+
+/* 加粗斜体 */
+.theme-mdnice-nenqing .markdown-body em strong {
+  color: rgb(71, 193, 168);
+}
+
+/* 删除线 */
+.theme-mdnice-nenqing .markdown-body del {
+}
+
+/* 分隔线
+* 粗细、样式和颜色
+* border-top: 1px solid #3e3e3e;
+*/
+.theme-mdnice-nenqing .markdown-body hr {
+}
+
+/* 图片
+* 宽度 width: 80%;
+* 居中 margin: 0 auto;
+* 居左 margin: 0 0;
+*/
+.theme-mdnice-nenqing .markdown-body img {
+}
+
+/* 图片描述文字 */
+.theme-mdnice-nenqing .markdown-body figcaption {
+}
+
+/* 行内代码 */
+.theme-mdnice-nenqing .markdown-body p code, .theme-mdnice-nenqing .markdown-body li code {
+  color: rgb(71, 193, 168);
+}
+
+/* 非微信代码块
+ * 代码块不换行 display: -webkit-box !important;
+ * 代码块换行 display: block;
+ */
+.theme-mdnice-nenqing .markdown-body pre code {
+}
+
+/*
+ * 表格内的单元格
+ * 字体大小 font-size: 16px;
+ * 边框 border: 1px solid #ccc;
+ * 内边距 padding: 5px 10px;
+ */
+.theme-mdnice-nenqing .markdown-body table tr th,
+.theme-mdnice-nenqing .markdown-body table tr td {
+}
+
+/* 脚注文字 */
+.theme-mdnice-nenqing .markdown-body .footnote-word {
+  color: rgb(71, 193, 168);
+}
+
+/* 脚注上标 */
+.theme-mdnice-nenqing .markdown-body .footnote-ref {
+  color: rgb(71, 193, 168);
+}
+
+.theme-mdnice-nenqing .markdown-body .footnote-item em {
+  color: black;
+}
+
+/* "参考资料"四个字 
+ * 内容 content: "参考资料";
+ */
+.theme-mdnice-nenqing .markdown-body .footnotes-sep:before {
+}
+
+/* 参考资料编号 */
+.theme-mdnice-nenqing .markdown-body .footnote-num {
+}
+
+/* 参考资料文字 */
+.theme-mdnice-nenqing .markdown-body .footnote-item p { 
+}
+
+/* 参考资料解释 */
+.theme-mdnice-nenqing .markdown-body .footnote-item p em {
+}
+
+/* 行间公式
+ * 最大宽度 max-width: 300% !important;
+ */
+.theme-mdnice-nenqing .markdown-body .block-equation svg {
+}
+
+/* 行内公式
+ */
+.theme-mdnice-nenqing .markdown-body .inline-equation svg {  
+}

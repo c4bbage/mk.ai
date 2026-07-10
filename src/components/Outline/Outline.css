@@ -1,13 +1,10 @@
-/* 大纲导航 - 液态玻璃风格 */
+/* 大纲导航 - 跟随文章主题（颜色由 .outline-panel 上的 CSS 变量驱动） */
 .outline {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 12px;
-  overflow: hidden;
+  background: transparent;
+  /* 不再使用圆角 + overflow:hidden，避免裁剪小三角 / 拖拽指示线错位 */
 }
 
 .outline-header {
@@ -15,9 +12,9 @@
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid var(--outline-border, rgba(0, 0, 0, 0.06));
   font-weight: 600;
-  color: #1a1a2e;
+  color: var(--outline-fg, #1a1a2e);
 }
 
 .outline-icon {
@@ -42,23 +39,23 @@
   gap: 8px;
   padding: 8px 12px;
   cursor: pointer;
-  transition: all 0.2s;
-  color: rgba(26, 26, 46, 0.7);
+  transition: background 0.15s, color 0.15s;
+  color: var(--outline-fg, rgba(26, 26, 46, 0.7));
   font-size: 13px;
 }
 
 .outline-item:hover {
-  background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
+  background: color-mix(in srgb, var(--outline-accent, #667eea) 12%, transparent);
+  color: var(--outline-accent, #667eea);
 }
 
 .outline-bullet {
-  color: rgba(102, 126, 234, 0.5);
+  color: color-mix(in srgb, var(--outline-accent, #667eea) 50%, transparent);
   font-size: 10px;
 }
 
 .outline-item:hover .outline-bullet {
-  color: #667eea;
+  color: var(--outline-accent, #667eea);
 }
 
 .outline-text {
@@ -71,7 +68,7 @@
 /* 不同级别的样式 */
 .outline-level-1 {
   font-weight: 600;
-  color: rgba(26, 26, 46, 0.9);
+  color: var(--outline-fg, rgba(26, 26, 46, 0.9));
 }
 
 .outline-level-2 {
@@ -93,7 +90,7 @@
   justify-content: center;
   height: 100%;
   gap: 8px;
-  color: rgba(26, 26, 46, 0.4);
+  color: color-mix(in srgb, var(--outline-fg, #1a1a2e) 40%, transparent);
 }
 
 .outline-empty-icon {
@@ -111,12 +108,12 @@
 }
 
 .outline-list::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
+  background: color-mix(in srgb, var(--outline-fg, #1a1a2e) 15%, transparent);
   border-radius: 2px;
 }
 
 .outline-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.2);
+  background: color-mix(in srgb, var(--outline-fg, #1a1a2e) 25%, transparent);
 }
 
 /* ===== Drag & reorder ===== */
@@ -125,8 +122,8 @@
 }
 
 .outline-item.drag-over {
-  border-top: 2px solid #667eea;
-  background: rgba(102, 126, 234, 0.08);
+  border-top: 2px solid var(--outline-accent, #667eea);
+  background: color-mix(in srgb, var(--outline-accent, #667eea) 8%, transparent);
 }
 
 /* ===== Level controls ===== */
@@ -148,14 +145,14 @@
   cursor: pointer;
   padding: 0 4px;
   font-size: 10px;
-  color: rgba(102, 126, 234, 0.6);
+  color: color-mix(in srgb, var(--outline-accent, #667eea) 60%, transparent);
   border-radius: 3px;
   line-height: 1;
 }
 
 .outline-level-btn:hover {
-  background: rgba(102, 126, 234, 0.15);
-  color: #667eea;
+  background: color-mix(in srgb, var(--outline-accent, #667eea) 15%, transparent);
+  color: var(--outline-accent, #667eea);
 }
 
 .outline-level-btn:disabled {
@@ -166,13 +163,13 @@
 /* ===== Hint text ===== */
 .outline-hint {
   font-size: 10px;
-  color: rgba(102, 126, 234, 0.5);
+  color: color-mix(in srgb, var(--outline-accent, #667eea) 50%, transparent);
   margin-left: auto;
   font-weight: 400;
 }
 
-/* ===== Dark mode ===== */
+/* ===== Dark mode（暗色主题已通过 CSS 变量生效，这里仅做轻微补强） ===== */
 [data-color-mode="dark"] .outline-level-btn:hover {
-  background: rgba(102, 126, 234, 0.2);
-  color: #a5b4fc;
+  background: color-mix(in srgb, var(--outline-accent, #667eea) 20%, transparent);
+  color: var(--outline-accent, #a5b4fc);
 }

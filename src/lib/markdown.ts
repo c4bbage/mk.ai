@@ -1,4 +1,4 @@
-import { marked } from 'marked';
+import { marked, type Token, type Tokens } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import hljs from 'highlight.js/lib/core';
 import ts from 'highlight.js/lib/languages/typescript';
@@ -35,60 +35,81 @@ marked.use(markedHighlight({
 }));
 
 // 自定义渲染器
-const renderer = new marked.Renderer();
-
-// 自定义图片渲染
-renderer.image = ({ href, title, text }) => {
-  const titleAttr = title ? ` title="${title}"` : '';
-  return `<img src="${href}" alt="${text || ''}"${titleAttr} loading="lazy" decoding="async" class="md-image" />`;
-};
-
 // 从文本生成 URL-safe slug
 function slugify(text: string): string {
   return text
     .replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
     .trim()
     .toLowerCase()
     .replace(/[^\w\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\s-]/g, '')
     .replace(/\s+/g, '-');
 }
 
-// heading id 计数器 — 用于处理重复标题
-const headingIdCounters = new Map<string, number>();
+// heading id 计数器 — 每次解析创建独立实例，避免并发调用互相污染
+class HeadingIdGen {
+  private counters = new Map<string, number>();
 
-function getHeadingId(text: string): string {
-  const base = slugify(text) || 'heading';
-  const count = headingIdCounters.get(base) || 0;
-  headingIdCounters.set(base, count + 1);
-  return count === 0 ? base : `${base}-${count}`;
+  next(text: string): string {
+    const base = slugify(text) || 'heading';
+    const count = this.counters.get(base) || 0;
+    this.counters.set(base, count + 1);
+    return count === 0 ? base : `${base}-${count}`;
+  }
 }
 
-// 重置 heading id 计数器（每次 parseMarkdown 调用前重置）
-function resetHeadingIds(): void {
-  headingIdCounters.clear();
+/**
+ * 创建带独立 heading-id 计数器的 renderer 实例。
+ * 每次调用 marked.parse 时传入，保证并发安全。
+ */
+function createRenderer(idGen: HeadingIdGen) {
+  const r = new marked.Renderer();
+  r.image = ({ href, title, text }) => {
+    const titleAttr = title ? ` title="${title}"` : '';
+    return `<img src="${href}" alt="${text || ''}"${titleAttr} loading="lazy" decoding="async" class="md-image" />`;
+  };
+  r.heading = ({ text, depth, tokens }) => {
+    const id = idGen.next(text);
+    // 用 parseInline 渲染行内格式（*italic*、**bold**、`code`、[link] 等）
+    // 再包裹 <span class="content"> 兼容 mdnice 主题
+    const inlineHtml = tokens ? r.parser.parseInline(tokens) : text;
+    return `<h${depth} id="${id}"><span class="content">${inlineHtml}</span></h${depth}>`;
+  };
+  r.blockquote = function ({ tokens }: { tokens: Token[] }) {
+    return `<blockquote class="multiquote-1">\n${this.parser.parse(tokens)}</blockquote>\n`;
+  };
+  r.listitem = function (item: Tokens.ListItem) {
+    return `<li><section>${this.parser.parse(item.tokens)}</section></li>\n`;
+  };
+  r.link = ({ href, title, text }) => {
+    const titleAttr = title ? ` title="${title}"` : '';
+    return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
+  };
+  return r;
 }
 
-// 自定义标题渲染 — 添加 id 用于 TOC 锚点跳转
-renderer.heading = ({ text, depth }) => {
-  const id = getHeadingId(text);
-  return `<h${depth} id="${id}">${text}</h${depth}>`;
-};
-renderer.link = ({ href, title, text }) => {
-  const titleAttr = title ? ` title="${title}"` : '';
-  return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
-};
-
-// 配置 marked
+// 配置 marked 全局选项（renderer 按每次调用传入，不在此设置）
 marked.setOptions({
-  renderer,
   gfm: true,
   breaks: true,
 });
 
+// 向后兼容：保留 resetHeadingIds（已无内部调用方，但 export 不破坏外部引用）
+const globalIdGen = new HeadingIdGen();
+export function resetHeadingIds(): void {
+  globalIdGen['counters'].clear();
+}
+
 /**
  * 生成目录 HTML
+ * 使用与 parseMarkdown 相同的 idGen 实例，确保 TOC 锚点和 heading id 一致。
  */
-function generateTOC(content: string): string {
+function generateTOC(content: string, idGen: HeadingIdGen): string {
   const blocks = parseMarkdownToBlocks(content);
   const items: string[] = [];
 
@@ -98,7 +119,7 @@ function generateTOC(content: string): string {
       if (match) {
         const level = match[1].length;
         const text = match[2].trim();
-        const anchor = getHeadingId(text);
+        const anchor = idGen.next(text);
         items.push(`<li class="toc-item toc-level-${level}" style="margin-left:${(level - 1) * 16}px"><a href="#${anchor}">${text}</a></li>`);
       }
     }
@@ -111,21 +132,45 @@ function generateTOC(content: string): string {
 import { parseMarkdownToBlocks } from './markdown-blocks';
 
 /**
+ * Strip YAML frontmatter (--- ... ---) from the start of a markdown document.
+ */
+function stripFrontmatter(content: string): string {
+  return content.replace(/^---\n[\s\S]*?\n---\n?/, '');
+}
+
+/**
+ * 解析单个 Markdown 块为 HTML（不做 TOC）。
+ * Worker 和主线程共用此函数，确保 renderer 配置一致。
+ * 每次调用创建独立的 HeadingIdGen 实例，并发安全。
+ */
+export function parseMarkdownBlock(content: string): string {
+  const stripped = stripFrontmatter(content);
+  const { processed, mathBlocks, mermaidBlocks } = protectSpecialBlocks(stripped);
+  const idGen = new HeadingIdGen();
+  const renderer = createRenderer(idGen);
+  let html = marked.parse(processed, { renderer }) as string;
+  html = restoreSpecialBlocks(html, mathBlocks, mermaidBlocks);
+  return html;
+}
+
+/**
  * 解析 Markdown 为 HTML
  */
 export function parseMarkdown(content: string): string {
-  resetHeadingIds();
-  const { processed, mathBlocks, mermaidBlocks } = protectSpecialBlocks(content);
+  const stripped = stripFrontmatter(content);
+  const { processed, mathBlocks, mermaidBlocks } = protectSpecialBlocks(stripped);
 
-  // 生成并替换 [TOC] — 先重置计数器，确保 TOC 和 heading renderer 使用一致的 id
-  const tocHtml = generateTOC(content);
+  // TOC 锚点和 heading renderer 的 id 必须一致。
+  // 用两个独立的 HeadingIdGen 实例：idGenForToc 生成 TOC 锚点 href，
+  // idGenForHeadings 生成 <hN id="...">。两者处理相同的 heading 文本、
+  // 都从空计数器开始，因此产生完全相同的 id 序列——互不干扰，并发安全。
+  const idGenForToc = new HeadingIdGen();
+  const tocHtml = generateTOC(stripped, idGenForToc);
   const processedWithTOC = processed.replace(/^\[TOC\]$/gm, tocHtml || '<p class="toc-empty">暂无标题</p>');
 
-  // 重置计数器，使 heading renderer 从 0 开始，与 TOC 生成的 id 一致
-  resetHeadingIds();
-
-  // 解析 Markdown
-  let html = marked.parse(processedWithTOC) as string;
+  const idGenForHeadings = new HeadingIdGen();
+  const renderer = createRenderer(idGenForHeadings);
+  let html = marked.parse(processedWithTOC, { renderer }) as string;
 
   // 还原数学公式和 Mermaid 占位符
   html = restoreSpecialBlocks(html, mathBlocks, mermaidBlocks);

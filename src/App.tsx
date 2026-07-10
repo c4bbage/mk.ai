@@ -1,18 +1,20 @@
-import { useRef, useCallback, useEffect, startTransition, useState } from 'react';
+import { useRef, useCallback, useEffect, startTransition, useMemo, useState, type CSSProperties } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { useEditorStore } from './stores/editor';
 import { Editor, type EditorRef } from './components/Editor';
 import { Preview, type PreviewRef, VirtualPreview } from './components/Preview';
 import { Outline } from './components/Outline';
 import { FileTree } from './components/FileTree';
 import { openFile, saveFile, saveFileAs, getFileName, isTauri } from './lib/file';
-import { revokeObjectUrls } from './lib/image';
-import { exportHTML, exportPDF, copyForWeChat, copyHTML, copyMarkdown } from './lib/export';
+import { revokeObjectUrls, extractAndSaveImages } from './lib/image';
+import { exportHTML, exportPDF, copyForWeChat, copyHTML, copyMarkdown, getMarkdownBodyHtml, copyImageToClipboard } from './lib/export';
 import { DEFAULT_MARKDOWN } from './lib/markdown';
 import { useAutoSave, usePeriodicBackup, getBackupsForRestore, clearBackup } from './hooks/useAutoSave';
 import { useToast } from './components/Toast/toast-context';
 import { useMenuEvents, type MenuAction } from './hooks/useMenuEvents';
 import { StatusBar } from './components/StatusBar/StatusBar';
 import { TabBar } from './components/TabBar/TabBar';
+import { THEMES, CODE_THEMES, getThemeColors, FONT_PRESETS, CODE_FONT_PRESETS, getCodeThemeClass } from './themes';
 import './App.css';
 
 function App() {
@@ -39,6 +41,8 @@ function App() {
   const setFontId = useEditorStore((s) => s.setFontId);
   const codeFontId = useEditorStore((s) => s.codeFontId);
   const setCodeFontId = useEditorStore((s) => s.setCodeFontId);
+  const codeTheme = useEditorStore((s) => s.codeTheme);
+  const setCodeTheme = useEditorStore((s) => s.setCodeTheme);
   const vimMode = useEditorStore((s) => s.vimMode);
   const toggleVimMode = useEditorStore((s) => s.toggleVimMode);
   const imageStorage = useEditorStore((s) => s.imageStorage);
@@ -59,6 +63,13 @@ function App() {
   const toggleFileTree = useEditorStore((s) => s.toggleFileTree);
   const openTab = useEditorStore((s) => s.openTab);
   const activeTabId = useEditorStore((s) => s.activeTabId);
+  const setCursor = useEditorStore((s) => s.setCursor);
+  const setSelection = useEditorStore((s) => s.setSelection);
+  const recentFiles = useEditorStore((s) => s.recentFiles);
+  const addRecentFile = useEditorStore((s) => s.addRecentFile);
+  const clearRecentFiles = useEditorStore((s) => s.clearRecentFiles);
+  const themeUsage = useEditorStore((s) => s.themeUsage);
+  const recordThemeUsage = useEditorStore((s) => s.recordThemeUsage);
 
   // ─── Revoke object URLs when switching tabs (prevents memory leak) ───
   const prevTabIdRef = useRef(activeTabId);
@@ -79,8 +90,28 @@ function App() {
         fileName: getFileName(result.path),
         filePath: result.path,
       });
+      addRecentFile(result.path);
     }
-  }, [openTab]);
+  }, [openTab, addRecentFile]);
+
+  // ─── Open a file by path (for recent files menu) ───
+  const handleOpenPath = useCallback(async (path: string) => {
+    if (!isTauri()) return;
+    try {
+      const fs = await import('@tauri-apps/plugin-fs');
+      const fileContent = await fs.readTextFile(path);
+      revokeObjectUrls();
+      openTab({
+        content: fileContent,
+        fileName: getFileName(path),
+        filePath: path,
+      });
+      addRecentFile(path);
+    } catch (e) {
+      console.error('[App] Failed to open recent file:', e);
+      showToast('无法打开文件，可能已被移动或删除');
+    }
+  }, [openTab, addRecentFile, showToast]);
 
   const handleNewFile = useCallback(() => {
     openTab({
@@ -96,10 +127,11 @@ function App() {
       setFileName(getFileName(savedPath));
       setIsModified(false);
       showToast(`已保存到 ${savedPath}`);
+      addRecentFile(savedPath);
     } else if (!filePath) {
       showToast('未保存：请使用 Cmd+Shift+S 另存为');
     }
-  }, [content, filePath, setFilePath, setFileName, setIsModified, showToast]);
+  }, [content, filePath, setFilePath, setFileName, setIsModified, showToast, addRecentFile]);
 
   const handleSaveFileAs = useCallback(async () => {
     const savedPath = await saveFileAs(content);
@@ -108,28 +140,47 @@ function App() {
       setFileName(getFileName(savedPath));
       setIsModified(false);
       showToast(`已保存到 ${savedPath}`);
+      addRecentFile(savedPath);
     }
-  }, [content, setFilePath, setFileName, setIsModified, showToast]);
+  }, [content, setFilePath, setFileName, setIsModified, showToast, addRecentFile]);
 
   const handleExportHTML = useCallback(async () => {
+    recordThemeUsage(theme);
+    showToast('正在导出 HTML…');
     const htmlFileName = fileName.replace(/\.(md|markdown)$/i, '.html') || 'document.html';
-    await exportHTML(content, theme, htmlFileName);
-  }, [content, theme, fileName]);
+    try {
+      await exportHTML(content, theme, htmlFileName, codeTheme);
+      showToast('HTML 已导出');
+    } catch {
+      showToast('导出失败，请重试');
+    }
+  }, [content, theme, codeTheme, fileName, recordThemeUsage, showToast]);
 
   const handleExportPDF = useCallback(async () => {
+    recordThemeUsage(theme);
+    showToast('正在生成 PDF…');
     const pdfTitle = fileName.replace(/\.(md|markdown)$/i, '') || 'document';
-    await exportPDF(content, theme, pdfTitle);
-  }, [content, theme, fileName]);
+    try {
+      await exportPDF(content, theme, pdfTitle, codeTheme);
+      showToast('PDF 打印窗口已打开');
+    } catch {
+      showToast('导出失败，请重试');
+    }
+  }, [content, theme, codeTheme, fileName, recordThemeUsage, showToast]);
 
   const handleExportImage = useCallback(async () => {
-    const { THEMES } = await import('./themes');
-    const { getMarkdownBodyHtml, copyImageToClipboard } = await import('./lib/export');
+    recordThemeUsage(theme);
+    showToast('正在生成图片…');
     const themeConfig = THEMES.find(t => t.id === theme);
     const themeClass = themeConfig?.className || 'theme-github';
+    const codeThemeClass = getCodeThemeClass(codeTheme);
 
     // 离屏全量渲染，带主题样式
+    // 注意：必须包含 preview-container class，否则 code-base.css 的
+    // .preview-container[class*="code-theme-"] 选择器不生效，
+    // pre 背景不会被置为 transparent，导致代码主题背景被遮挡
     const wrapper = document.createElement('div');
-    wrapper.className = themeClass;
+    wrapper.className = `preview-container ${themeClass} ${codeThemeClass}`;
     wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#fff;padding:40px;';
     const body = document.createElement('div');
     body.className = 'markdown-body';
@@ -158,21 +209,23 @@ function App() {
     } finally {
       document.body.removeChild(wrapper);
     }
-  }, [content, theme, showToast]);
+  }, [content, theme, codeTheme, showToast, recordThemeUsage]);
 
   const handleCopyWeChat = useCallback(async () => {
-    const ok = await copyForWeChat(content, theme);
+    recordThemeUsage(theme);
+    const ok = await copyForWeChat(content, theme, codeTheme, filePath);
     if (ok) {
       showToast('已复制公众号格式');
     }
-  }, [content, theme, showToast]);
+  }, [content, theme, codeTheme, filePath, showToast, recordThemeUsage]);
 
   const handleCopyHTML = useCallback(async () => {
-    const ok = await copyHTML(content, theme, fileName.replace(/\.(md|markdown)$/i, '') || 'document');
+    recordThemeUsage(theme);
+    const ok = await copyHTML(content, theme, fileName.replace(/\.(md|markdown)$/i, '') || 'document', codeTheme);
     if (ok) {
       showToast('已复制 HTML');
     }
-  }, [content, theme, fileName, showToast]);
+  }, [content, theme, codeTheme, fileName, showToast, recordThemeUsage]);
 
   const handleCopyMarkdown = useCallback(async () => {
     const ok = await copyMarkdown(content);
@@ -187,7 +240,6 @@ function App() {
       showToast('需要先保存文件');
       return;
     }
-    const { extractAndSaveImages } = await import('./lib/image');
     const newContent = await extractAndSaveImages(content, filePath, imageStorage === 'base64' ? 'assets' : imageStorage as 'assets' | 'images');
     if (newContent !== content) {
       setContent(newContent);
@@ -261,34 +313,128 @@ function App() {
     }
   }, [setContent, setFilePath, setFileName, openTab, showToast]);
 
+  // ─── Editor content change ───
+  const handleContentChange = useCallback((val: string) => {
+    startTransition(() => setContent(val));
+  }, [setContent]);
+
+  // ─── Cursor / selection reporting → store (StatusBar subscribes; App stays cheap) ───
+  const handleCursorChange = useCallback((line: number, col: number, selChars: number, selWords: number) => {
+    setCursor({ line, col });
+    setSelection({ chars: selChars, words: selWords });
+  }, [setCursor, setSelection]);
+
+  // ─── Theme cycle (status-bar quick switch) ───
+  const handleCycleTheme = useCallback(() => {
+    const idx = THEMES.findIndex(t => t.id === theme);
+    const next = THEMES[(idx + 1) % THEMES.length];
+    setTheme(next.id);
+    showToast(`主题: ${next.name}`);
+  }, [theme, setTheme, showToast]);
+
+  const handleCycleCodeTheme = useCallback(() => {
+    const idx = CODE_THEMES.findIndex(t => t.id === codeTheme);
+    const next = CODE_THEMES[(idx + 1) % CODE_THEMES.length];
+    setCodeTheme(next.id);
+    showToast(`代码主题: ${next.name}`);
+  }, [codeTheme, setCodeTheme, showToast]);
+
+  // ─── Outline panel: sync colors with the active article theme ───
+  const outlineVars = useMemo<Record<string, string>>(() => {
+    const c = getThemeColors(theme);
+    return {
+      '--outline-panel-bg': c.bgSecondary,
+      '--outline-fg': c.text,
+      '--outline-accent': c.accent,
+      '--outline-border': c.border,
+    };
+  }, [theme]);
+
+  // ─── Sync scroll refs (declared early for use in outline + scroll handlers) ───
+  const syncLockRef = useRef<'editor' | 'preview' | 'both' | null>(null);
+  const syncRafRef = useRef<number | null>(null);
+
   // ─── Outline click: jump to heading ───
   const handleOutlineClick = useCallback((id: string) => {
     const match = id.match(/^heading-(\d+)$/);
     if (!match) return;
     const headingIndex = parseInt(match[1]);
-    const lines = content.split('\n');
-    let count = 0;
-    for (let i = 0; i < lines.length; i++) {
-      if (/^#{1,6}\s+/.test(lines[i])) {
-        if (count === headingIndex) {
-          editorRef.current?.focus();
-          const scrollContainer = editorRef.current?.getScrollContainer();
-          if (scrollContainer) {
-            scrollContainer.scrollTop = i * 24;
+
+    // 锁定双向 sync-scroll，防止编辑器/预览滚动事件互相覆盖
+    syncLockRef.current = 'both';
+    if (syncRafRef.current) cancelAnimationFrame(syncRafRef.current);
+
+    // 1) Editor: scroll to line
+    if (showEditor) {
+      const lines = content.split('\n');
+      let count = 0;
+      let inCodeBlock = false;
+      let inMathBlock = false;
+      for (let i = 0; i < lines.length; i++) {
+        const trimmed = lines[i].trim();
+        if (trimmed.startsWith('```')) { inCodeBlock = !inCodeBlock; continue; }
+        if (trimmed === '$$') { inMathBlock = !inMathBlock; continue; }
+        if (inCodeBlock || inMathBlock) continue;
+        if (/^#{1,6}\s+/.test(lines[i])) {
+          if (count === headingIndex) {
+            editorRef.current?.focus();
+            editorRef.current?.scrollToLine(i);
+            break;
           }
-          const totalLines = lines.length;
-          const ratio = totalLines > 1 ? i / (totalLines - 1) : 0;
-          const previewContainer = previewScrollRef.current?.getScrollContainer();
-          if (previewContainer) {
-            const scrollable = Math.max(previewContainer.scrollHeight - previewContainer.clientHeight, 0);
-            previewScrollRef.current?.scrollTo(ratio * scrollable);
-          }
-          break;
+          count++;
         }
-        count++;
       }
     }
-  }, [content]);
+
+    // 2) Preview: find Nth heading element and scrollIntoView
+    //    延迟到下一帧，确保预览 DOM 已渲染最新内容
+    syncLockRef.current = 'both';
+    requestAnimationFrame(() => {
+      const previewContainer = previewScrollRef.current?.getScrollContainer();
+      if (previewContainer) {
+        const headingEls = previewContainer.querySelectorAll<HTMLElement>('h1, h2, h3, h4, h5, h6');
+        const target = headingEls[headingIndex];
+        if (target) {
+          target.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+      }
+    });
+
+    // 延迟释放锁（等所有 scroll 事件处理完）
+    setTimeout(() => {
+      syncLockRef.current = null;
+    }, 200);
+  }, [content, showEditor]);
+
+  // ─── Outline heading level change (undo-friendly via editor dispatch) ───
+  const handleHeadingLevelChange = useCallback((lineIndex: number, newPrefix: string) => {
+    if (editorRef.current) {
+      editorRef.current.setHeadingAtLine(lineIndex, newPrefix);
+    } else {
+      // Editor not visible — fall back to direct content modification
+      const lines = content.split('\n');
+      if (lineIndex >= 0 && lineIndex < lines.length) {
+        const stripped = lines[lineIndex].replace(/^#{1,6}\s*/, '');
+        lines[lineIndex] = newPrefix ? `${newPrefix} ${stripped}` : stripped;
+        handleContentChange(lines.join('\n'));
+      }
+    }
+  }, [content, handleContentChange]);
+
+  // ─── Outline drag reorder (undo-friendly via editor dispatch) ───
+  const handleHeadingMove = useCallback((fromStart: number, fromEnd: number, insertAt: number) => {
+    if (editorRef.current) {
+      editorRef.current.moveLines(fromStart, fromEnd, insertAt);
+    } else {
+      const lines = content.split('\n');
+      const movedBlock = lines.slice(fromStart, fromEnd);
+      const remaining = lines.slice(0, fromStart).concat(lines.slice(fromEnd));
+      const insertPos = insertAt > fromStart ? insertAt - (fromEnd - fromStart) : insertAt;
+      const clampedPos = Math.max(0, Math.min(insertPos, remaining.length));
+      const newLines = remaining.slice(0, clampedPos).concat(movedBlock, remaining.slice(clampedPos));
+      handleContentChange(newLines.join('\n'));
+    }
+  }, [content, handleContentChange]);
 
   // ─── File tree selection ───
   const handleFileTreeSelect = useCallback(async (path: string) => {
@@ -301,10 +447,25 @@ function App() {
         fileName: getFileName(path),
         filePath: path,
       });
+      addRecentFile(path);
     } catch (e) {
       console.error('[App] Failed to open file from tree:', e);
     }
-  }, [openTab]);
+  }, [openTab, addRecentFile]);
+
+  // ─── File tree rename: update store if current file was renamed ───
+  const handleFileTreeRename = useCallback((_oldPath: string, newPath: string) => {
+    setFilePath(newPath);
+    setFileName(getFileName(newPath));
+  }, [setFilePath, setFileName]);
+
+  // ─── File tree delete: reset current tab if the deleted file was open ───
+  const handleFileTreeDelete = useCallback(() => {
+    setContent(DEFAULT_MARKDOWN);
+    setFileName('untitled.md');
+    setFilePath(undefined);
+    setIsModified(false);
+  }, [setContent, setFileName, setFilePath, setIsModified]);
 
   // ─── Color mode: compute effective mode and set on <html> ───
   useEffect(() => {
@@ -325,21 +486,40 @@ function App() {
     return () => mql.removeEventListener('change', apply);
   }, [colorMode]);
 
+  // ─── Sync menu state (recent files + favorite themes) to native menu ───
+  useEffect(() => {
+    if (!isTauri()) return;
+    const favorites = Object.entries(themeUsage)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([id, count]) => ({ id, count }));
+    invoke('update_menu_state', {
+      update: {
+        recents: recentFiles,
+        favorites,
+        currentTheme: theme,
+        currentCodeTheme: codeTheme,
+      },
+    }).catch(console.error);
+  }, [recentFiles, themeUsage, theme, codeTheme]);
+
   // ─── IME composition ───
   const handleCompositionStart = useCallback(() => setIsComposing(true), []);
   const handleCompositionEnd = useCallback(() => setIsComposing(false), []);
 
-  // ─── Editor content change ───
-  const handleContentChange = useCallback((val: string) => {
-    startTransition(() => setContent(val));
-  }, [setContent]);
-
   // ─── Sync scroll: bidirectional proportional with lock ───
-  const syncLockRef = useRef<'editor' | 'preview' | null>(null);
-  const syncRafRef = useRef<number | null>(null);
+  // 锁用 timeout 释放（覆盖 macOS 触控板惯性滚动 ~300ms）
+  const syncReleaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const releaseSyncLock = useCallback(() => {
+    if (syncReleaseTimerRef.current) clearTimeout(syncReleaseTimerRef.current);
+    syncReleaseTimerRef.current = setTimeout(() => {
+      syncLockRef.current = null;
+    }, 250);
+  }, []);
 
   const handleEditorScroll = useCallback((scrollTop: number, scrollHeight: number, clientHeight: number) => {
-    if (syncLockRef.current === 'preview') return;
+    if (syncLockRef.current === 'preview' || syncLockRef.current === 'both') return;
     syncLockRef.current = 'editor';
     const scrollable = Math.max(scrollHeight - clientHeight, 0);
     const ratio = scrollable > 0 ? scrollTop / scrollable : 0;
@@ -350,12 +530,12 @@ function App() {
         const previewScrollable = Math.max(previewContainer.scrollHeight - previewContainer.clientHeight, 0);
         previewScrollRef.current?.scrollTo(ratio * previewScrollable);
       }
-      syncLockRef.current = null;
     });
-  }, []);
+    releaseSyncLock();
+  }, [releaseSyncLock]);
 
   const handlePreviewScroll = useCallback((scrollTop: number, scrollHeight: number, clientHeight: number) => {
-    if (syncLockRef.current === 'editor') return;
+    if (syncLockRef.current === 'editor' || syncLockRef.current === 'both') return;
     syncLockRef.current = 'preview';
     const scrollable = Math.max(scrollHeight - clientHeight, 0);
     const ratio = scrollable > 0 ? scrollTop / scrollable : 0;
@@ -366,9 +546,9 @@ function App() {
         const editorScrollable = Math.max(editorContainer.scrollHeight - editorContainer.clientHeight, 0);
         editorContainer.scrollTop = ratio * editorScrollable;
       }
-      syncLockRef.current = null;
     });
-  }, []);
+    releaseSyncLock();
+  }, [releaseSyncLock]);
 
   // ─── View mode switching (Typora-style) ───
   const scrollPreviewToCursor = useCallback(() => {
@@ -407,6 +587,19 @@ function App() {
       focusEditor();
     }
   }, [showEditor, showPreview, togglePreview, switchToPreviewMode, switchToEditMode, focusEditor]);
+
+  // ─── View mode switcher (status bar): edit / split / preview ───
+  const handleSwitchView = useCallback((mode: 'edit' | 'split' | 'preview') => {
+    if (mode === 'edit') {
+      switchToEditMode();
+    } else if (mode === 'preview') {
+      switchToPreviewMode();
+    } else {
+      if (!showEditor) toggleEditor();
+      if (!showPreview) togglePreview();
+      focusEditor();
+    }
+  }, [switchToEditMode, switchToPreviewMode, showEditor, showPreview, toggleEditor, togglePreview, focusEditor]);
 
   // ─── Window title: show filename like Typora ───
   useEffect(() => {
@@ -465,7 +658,6 @@ function App() {
         break;
       }
       case 'view:cycle_font': {
-        const { FONT_PRESETS } = await import('./themes');
         const idx = FONT_PRESETS.findIndex(f => f.id === fontId);
         const next = FONT_PRESETS[(idx + 1) % FONT_PRESETS.length];
         setFontId(next.id);
@@ -473,7 +665,6 @@ function App() {
         break;
       }
       case 'view:cycle_codefont': {
-        const { CODE_FONT_PRESETS } = await import('./themes');
         const idx = CODE_FONT_PRESETS.findIndex(f => f.id === codeFontId);
         const next = CODE_FONT_PRESETS[(idx + 1) % CODE_FONT_PRESETS.length];
         setCodeFontId(next.id);
@@ -487,15 +678,23 @@ function App() {
         showToast('MD.AI v1.0.0 — A Typora-style Markdown Editor');
         break;
       default:
-        // Handle checkable submenu items: prefix:value
-        if (action.startsWith('font:')) {
+        // Handle recent files, favorite themes, and checkable submenu items
+        if (action.startsWith('recent:')) {
+          if (action === 'recent:clear') {
+            clearRecentFiles();
+          } else if (action !== 'recent:empty') {
+            const idx = parseInt(action.slice(7));
+            const path = recentFiles[idx];
+            if (path) handleOpenPath(path);
+          }
+        } else if (action.startsWith('favtheme:')) {
+          setTheme(action.slice(9));
+        } else if (action.startsWith('font:')) {
           const id = action.slice(5);
-          const { FONT_PRESETS } = await import('./themes');
           const preset = FONT_PRESETS.find(f => f.id === id);
           if (preset) { setFontId(id); showToast(`字体: ${preset.name}`); }
         } else if (action.startsWith('codefont:')) {
           const id = action.slice(9);
-          const { CODE_FONT_PRESETS } = await import('./themes');
           const preset = CODE_FONT_PRESETS.find(f => f.id === id);
           if (preset) { setCodeFontId(id); showToast(`代码字体: ${preset.name}`); }
         } else if (action.startsWith('image:')) {
@@ -510,6 +709,10 @@ function App() {
           showToast(`自动保存延迟: ${labels[delay] || delay}`);
         } else if (action.startsWith('theme:')) {
           setTheme(action.slice(6));
+        } else if (action.startsWith('codetheme:')) {
+          const id = action.slice(10);
+          const preset = CODE_THEMES.find(t => t.id === id);
+          if (preset) { setCodeTheme(id); showToast(`代码主题: ${preset.name}`); }
         }
         break;
     }
@@ -518,15 +721,19 @@ function App() {
     handleExportHTML, handleExportPDF, handleExportImage, handleCopyWeChat,
     handleCopyHTML, handleCopyMarkdown,
     toggleSourcePreview, toggleOutline, toggleFileTree,
-    setFontSize, adjustFontSize, setAutoSave, autoSave, autoSaveDelay, setAutoSaveDelay,
+    setFontSize, adjustFontSize, setAutoSave, autoSave, setAutoSaveDelay,
     cycleColorMode, colorMode, toggleVimMode, vimMode, fontId, setFontId, codeFontId, setCodeFontId,
-    imageStorage, setImageStorage, handleExtractImages, setTheme, showToast,
+    setImageStorage, handleExtractImages, setTheme, setCodeTheme, showToast,
+    recentFiles, handleOpenPath, clearRecentFiles,
   ]);
 
   useMenuEvents(handleMenuAction);
 
   // ─── Web-mode keyboard shortcuts (fallback when no native menu) ───
+  // In Tauri mode, native menu accelerators handle these — skip to avoid double-fire
   useEffect(() => {
+    if (isTauri()) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       const isMod = e.metaKey || e.ctrlKey;
 
@@ -542,9 +749,6 @@ function App() {
       } else if (isMod && e.key === 'n' && !e.shiftKey) {
         e.preventDefault();
         handleNewFile();
-      } else if (isMod && e.key === '/') {
-        e.preventDefault();
-        toggleSourcePreview();
       } else if (isMod && e.shiftKey && e.key === '\\') {
         e.preventDefault();
         toggleFileTree();
@@ -599,17 +803,17 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
     handleOpenFile, handleSaveFile, handleSaveFileAs, handleNewFile,
-    handleCopyWeChat, toggleSourcePreview, toggleOutline, toggleFileTree,
+    handleCopyWeChat, toggleOutline, toggleFileTree,
     showEditor, showPreview, adjustFontSize, cycleColorMode, toggleVimMode,
   ]);
 
   return (
-    <div className="app app-typora">
+    <div className="app app-typora" style={outlineVars as unknown as CSSProperties}>
       <TabBar />
       <div className="app-content">
         {showFileTree && (
           <div className="file-tree-panel">
-            <FileTree currentFilePath={filePath} onFileSelect={handleFileTreeSelect} onFolderOpen={() => {}} />
+            <FileTree currentFilePath={filePath} onFileSelect={handleFileTreeSelect} onFolderOpen={() => {}} onFileRename={handleFileTreeRename} onFileDelete={handleFileTreeDelete} />
           </div>
         )}
 
@@ -618,7 +822,9 @@ function App() {
             <Outline
               content={content}
               onItemClick={handleOutlineClick}
-              onHeadingsChange={handleContentChange}
+              onHeadingLevelChange={handleHeadingLevelChange}
+              onHeadingMove={handleHeadingMove}
+              canEdit
             />
           </div>
         )}
@@ -638,6 +844,7 @@ function App() {
               onScroll={handleEditorScroll}
               onCompositionStart={handleCompositionStart}
               onCompositionEnd={handleCompositionEnd}
+              onCursorChange={handleCursorChange}
             />
           </div>
         )}
@@ -651,6 +858,7 @@ function App() {
                 ref={previewScrollRef}
                 content={content}
                 theme={theme}
+                codeTheme={codeTheme}
                 fontSize={fontSize}
                 isComposing={isComposing}
                 onScroll={handlePreviewScroll}
@@ -660,6 +868,7 @@ function App() {
                 ref={previewScrollRef}
                 content={content}
                 theme={theme}
+                codeTheme={codeTheme}
                 fontSize={fontSize}
                 isComposing={isComposing}
                 onScroll={handlePreviewScroll}
@@ -671,10 +880,10 @@ function App() {
 
       <StatusBar
         content={content}
-        filePath={filePath}
-        isModified={isModified}
         isComposing={isComposing}
-        vimMode={vimMode}
+        onCycleTheme={handleCycleTheme}
+        onCycleCodeTheme={handleCycleCodeTheme}
+        onSwitchView={handleSwitchView}
       />
     </div>
   );

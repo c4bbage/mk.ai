@@ -106,6 +106,37 @@ const x = 1;
     const ids = blocks.map(b => b.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  it('parses setext H1 headings', () => {
+    const blocks = parseMarkdownToBlocks('Heading\n=======');
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe('heading');
+    expect(blocks[0].level).toBe(1);
+  });
+
+  it('parses setext H2 headings', () => {
+    const blocks = parseMarkdownToBlocks('Subheading\n----------');
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe('heading');
+    expect(blocks[0].level).toBe(2);
+  });
+
+  it('treats --- after text as setext H2, not hr', () => {
+    const blocks = parseMarkdownToBlocks('Title\n---');
+    expect(blocks[0].type).toBe('heading');
+    expect(blocks[0].level).toBe(2);
+  });
+
+  it('treats standalone --- as hr, not setext', () => {
+    const blocks = parseMarkdownToBlocks('---');
+    expect(blocks[0].type).toBe('hr');
+  });
+
+  it('parses tables without trailing pipe', () => {
+    const blocks = parseMarkdownToBlocks('| A | B\n|---|---\n| 1 | 2');
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe('table');
+  });
 });
 
 describe('estimateBlockHeight', () => {

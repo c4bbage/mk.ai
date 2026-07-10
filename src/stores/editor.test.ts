@@ -127,4 +127,21 @@ describe('useEditorStore', () => {
     expect(state.isModified).toBe(false);
     expect(state.content).toContain('MD.AI');
   });
+
+  it('reorders tabs', () => {
+    useEditorStore.getState().openTab({ content: 'A', fileName: 'a.md' });
+    useEditorStore.getState().openTab({ content: 'B', fileName: 'b.md' });
+    useEditorStore.getState().openTab({ content: 'C', fileName: 'c.md' });
+
+    const tabs = useEditorStore.getState().tabs;
+    expect(tabs.map(t => t.fileName)).toEqual(['untitled.md', 'a.md', 'b.md', 'c.md']);
+
+    // Move c.md to position of a.md
+    const cId = tabs.find(t => t.fileName === 'c.md')!.id;
+    const aId = tabs.find(t => t.fileName === 'a.md')!.id;
+    useEditorStore.getState().reorderTabs(cId, aId);
+
+    const reordered = useEditorStore.getState().tabs.map(t => t.fileName);
+    expect(reordered).toEqual(['untitled.md', 'c.md', 'a.md', 'b.md']);
+  });
 });

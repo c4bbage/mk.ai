@@ -81,8 +81,8 @@ export function parseMarkdownToBlocks(content: string): MarkdownBlock[] {
       continue;
     }
 
-    // 表格检测
-    if (trimmedLine.startsWith('|') && trimmedLine.endsWith('|')) {
+    // 表格检测 — GFM 允许省略行尾 |
+    if (trimmedLine.startsWith('|')) {
       if (!inTable) {
         flushBlock();
         inTable = true;
@@ -101,6 +101,40 @@ export function parseMarkdownToBlocks(content: string): MarkdownBlock[] {
       if (currentBlock.length > 0) {
         flushBlock();
       }
+      continue;
+    }
+
+    // Setext heading: current line is === or ---- underline
+    // and there's text above in currentBlock. Must check BEFORE hr.
+    if (currentBlock.length > 0 &&
+        currentBlock[currentBlock.length - 1].trim() !== '' &&
+        /^=+$/.test(trimmedLine)) {
+      const text = currentBlock.join('\n');
+      currentBlock = [];
+      blockType = 'paragraph';
+      blocks.push({
+        id: `block-${blockId++}`,
+        type: 'heading',
+        content: text + '\n' + line,
+        level: 1,
+      });
+      continue;
+    }
+    // Setext H2: 2+ dashes (--- conflicts with hr, so require 4+ or check context)
+    // GFM: --- after text is setext H2; --- after blank line is hr.
+    // We already handle hr only when currentBlock is empty (setext takes priority here)
+    if (currentBlock.length > 0 &&
+        currentBlock[currentBlock.length - 1].trim() !== '' &&
+        /^-{2,}$/.test(trimmedLine)) {
+      const text = currentBlock.join('\n');
+      currentBlock = [];
+      blockType = 'paragraph';
+      blocks.push({
+        id: `block-${blockId++}`,
+        type: 'heading',
+        content: text + '\n' + line,
+        level: 2,
+      });
       continue;
     }
 
@@ -183,7 +217,9 @@ export function estimateBlockHeight(block: MarkdownBlock, fontSize: number = 16)
   switch (block.type) {
     case 'heading': {
       const level = block.level || 1;
-      return fontSize * (3 - level * 0.3) + 32; // 标题更高
+      const emMultipliers = [0, 2, 1.5, 1.25, 1, 0.875, 0.85];
+      const em = emMultipliers[level] || 1;
+      return fontSize * em * 1.8 + 32;
     }
     case 'code':
     case 'mermaid':

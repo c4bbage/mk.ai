@@ -1,0 +1,71 @@
+/* ===== 代码主题：Monokai  (源自 wechat.jeffjade.com) ===== */
+/*
+Monokai style - ported by Luigi Maselli - http://grigio.org
+*/
+
+.code-theme-monokai .hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 16px;
+  background: #272822; color: #ddd;
+}
+
+.code-theme-monokai .hljs-tag,
+.code-theme-monokai .hljs-keyword,
+.code-theme-monokai .hljs-selector-tag,
+.code-theme-monokai .hljs-literal,
+.code-theme-monokai .hljs-strong,
+.code-theme-monokai .hljs-name {
+  color: #f92672;
+}
+
+.code-theme-monokai .hljs-code {
+  color: #66d9ef;
+}
+
+.code-theme-monokai .hljs-class .code-theme-monokai .hljs-title {
+  color: white;
+}
+
+.code-theme-monokai .hljs-attribute,
+.code-theme-monokai .hljs-symbol,
+.code-theme-monokai .hljs-regexp,
+.code-theme-monokai .hljs-link {
+  color: #bf79db;
+}
+
+.code-theme-monokai .hljs-string,
+.code-theme-monokai .hljs-bullet,
+.code-theme-monokai .hljs-subst,
+.code-theme-monokai .hljs-title,
+.code-theme-monokai .hljs-section,
+.code-theme-monokai .hljs-emphasis,
+.code-theme-monokai .hljs-type,
+.code-theme-monokai .hljs-built_in,
+.code-theme-monokai .hljs-builtin-name,
+.code-theme-monokai .hljs-selector-attr,
+.code-theme-monokai .hljs-selector-pseudo,
+.code-theme-monokai .hljs-addition,
+.code-theme-monokai .hljs-variable,
+.code-theme-monokai .hljs-template-tag,
+.code-theme-monokai .hljs-template-variable {
+  color: #a6e22e;
+}
+
+.code-theme-monokai .hljs-comment,
+.code-theme-monokai .hljs-quote,
+.code-theme-monokai .hljs-deletion,
+.code-theme-monokai .hljs-meta {
+  color: #75715e;
+}
+
+.code-theme-monokai .hljs-keyword,
+.code-theme-monokai .hljs-selector-tag,
+.code-theme-monokai .hljs-literal,
+.code-theme-monokai .hljs-doctag,
+.code-theme-monokai .hljs-title,
+.code-theme-monokai .hljs-section,
+.code-theme-monokai .hljs-type,
+.code-theme-monokai .hljs-selector-id {
+  font-weight: bold;
+}

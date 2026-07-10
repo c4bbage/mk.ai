@@ -73,6 +73,14 @@
   background: rgba(0, 0, 0, 0.2);
 }
 
+[data-color-mode="dark"] .editor-container .cm-scroller::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+[data-color-mode="dark"] .editor-container .cm-scroller::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 /* Markdown syntax highlighting */
 .editor-container .cm-header {
   color: #667eea;

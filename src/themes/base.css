@@ -178,9 +178,23 @@
   text-align: center;
 }
 
+/* SVG 保持原始尺寸，宽图通过 overflow-x:auto 滚动，而非缩放（避免 foreignObject 标签溢出） */
 .markdown-body .mermaid-block svg {
-  max-width: 100%;
+  max-width: none;
   height: auto;
+}
+
+/* 防止 mermaid 内部标签继承主题字体/字号导致 CJK 文字宽度不匹配被裁剪 */
+.markdown-body .mermaid-block svg .nodeLabel,
+.markdown-body .mermaid-block svg .edgeLabel,
+.markdown-body .mermaid-block svg .cluster-label,
+.markdown-body .mermaid-block svg .label,
+.markdown-body .mermaid-block svg foreignObject,
+.markdown-body .mermaid-block svg foreignObject > div,
+.markdown-body .mermaid-block svg text,
+.markdown-body .mermaid-block svg tspan {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif !important;
+  font-size: 14px !important;
 }
 
 .markdown-body .mermaid-error {

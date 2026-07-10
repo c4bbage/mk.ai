@@ -1,0 +1,97 @@
+/* ===== 代码主题：Atom One Dark  (源自 wechat.jeffjade.com) ===== */
+/*
+
+Atom One Dark by Daniel Gamage
+Original One Dark Syntax theme from https://github.com/atom/one-dark-syntax
+
+base:    #282c34
+mono-1:  #abb2bf
+mono-2:  #818896
+mono-3:  #5c6370
+hue-1:   #56b6c2
+hue-2:   #61aeee
+hue-3:   #c678dd
+hue-4:   #98c379
+hue-5:   #e06c75
+hue-5-2: #be5046
+hue-6:   #d19a66
+hue-6-2: #e6c07b
+
+*/
+
+.code-theme-atom-one-dark .hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 16px;
+  color: #abb2bf;
+  background: #282c34;
+}
+
+.code-theme-atom-one-dark .hljs-comment,
+.code-theme-atom-one-dark .hljs-quote {
+  color: #5c6370;
+  font-style: italic;
+}
+
+.code-theme-atom-one-dark .hljs-doctag,
+.code-theme-atom-one-dark .hljs-keyword,
+.code-theme-atom-one-dark .hljs-formula {
+  color: #c678dd;
+}
+
+.code-theme-atom-one-dark .hljs-section,
+.code-theme-atom-one-dark .hljs-name,
+.code-theme-atom-one-dark .hljs-selector-tag,
+.code-theme-atom-one-dark .hljs-deletion,
+.code-theme-atom-one-dark .hljs-subst {
+  color: #e06c75;
+}
+
+.code-theme-atom-one-dark .hljs-literal {
+  color: #56b6c2;
+}
+
+.code-theme-atom-one-dark .hljs-string,
+.code-theme-atom-one-dark .hljs-regexp,
+.code-theme-atom-one-dark .hljs-addition,
+.code-theme-atom-one-dark .hljs-attribute,
+.code-theme-atom-one-dark .hljs-meta-string {
+  color: #98c379;
+}
+
+.code-theme-atom-one-dark .hljs-built_in,
+.code-theme-atom-one-dark .hljs-class .code-theme-atom-one-dark .hljs-title {
+  color: #e6c07b;
+}
+
+.code-theme-atom-one-dark .hljs-attr,
+.code-theme-atom-one-dark .hljs-variable,
+.code-theme-atom-one-dark .hljs-template-variable,
+.code-theme-atom-one-dark .hljs-type,
+.code-theme-atom-one-dark .hljs-selector-class,
+.code-theme-atom-one-dark .hljs-selector-attr,
+.code-theme-atom-one-dark .hljs-selector-pseudo,
+.code-theme-atom-one-dark .hljs-number {
+  color: #d19a66;
+}
+
+.code-theme-atom-one-dark .hljs-symbol,
+.code-theme-atom-one-dark .hljs-bullet,
+.code-theme-atom-one-dark .hljs-link,
+.code-theme-atom-one-dark .hljs-meta,
+.code-theme-atom-one-dark .hljs-selector-id,
+.code-theme-atom-one-dark .hljs-title {
+  color: #61aeee;
+}
+
+.code-theme-atom-one-dark .hljs-emphasis {
+  font-style: italic;
+}
+
+.code-theme-atom-one-dark .hljs-strong {
+  font-weight: bold;
+}
+
+.code-theme-atom-one-dark .hljs-link {
+  text-decoration: underline;
+}

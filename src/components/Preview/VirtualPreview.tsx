@@ -4,9 +4,8 @@ import { estimateBlockHeight } from '../../lib/markdown-blocks';
 import { renderMathInElement } from '../../lib/math';
 import { renderMermaidInElement } from '../../lib/mermaid';
 import { usePipelineWorker, type RenderBlock } from '../../hooks/usePipelineWorker';
-import { THEMES } from '../../themes';
+import { THEMES, getCodeThemeClass } from '../../themes';
 import 'katex/dist/katex.min.css';
-import 'highlight.js/styles/github.css';
 import './Preview.css';
 import { applyHtmlPatch, isHtmlDifferent } from '../../lib/dom-patch';
 import { perfMark, perfMeasure } from '../../lib/performance';
@@ -16,6 +15,7 @@ import type { PreviewRef } from './Preview';
 interface VirtualPreviewProps {
   content: string;
   theme: string;
+  codeTheme?: string;
   fontSize?: number;
   isComposing?: boolean;
   onScroll?: (scrollTop: number, scrollHeight: number, clientHeight: number) => void;
@@ -119,6 +119,7 @@ const OVERSCAN = 3;
 export const VirtualPreview = forwardRef<PreviewRef, VirtualPreviewProps>(function VirtualPreview({
   content,
   theme,
+  codeTheme,
   fontSize = 16,
   isComposing = false,
   onScroll,
@@ -145,6 +146,7 @@ export const VirtualPreview = forwardRef<PreviewRef, VirtualPreviewProps>(functi
   // 获取主题类名
   const themeConfig = THEMES.find(t => t.id === theme);
   const themeClass = themeConfig?.className || 'theme-github';
+  const codeThemeClass = getCodeThemeClass(codeTheme ?? '');
 
   // 预计算每个块的估算高度和累计偏移量
   const layout = useMemo(() => {
@@ -251,7 +253,7 @@ export const VirtualPreview = forwardRef<PreviewRef, VirtualPreviewProps>(functi
   const visibleBlocks = blocks.slice(visibleRange.start, visibleRange.end + 1);
 
   return (
-    <div className={`preview-container virtual-preview ${themeClass}`}>
+    <div ref={containerRef} className={`preview-container virtual-preview ${themeClass} ${codeThemeClass}`}>
       {/* 解析中指示器 */}
       {isParsing && (
         <div className="parse-indicator">
@@ -268,7 +270,6 @@ export const VirtualPreview = forwardRef<PreviewRef, VirtualPreviewProps>(functi
       )}
 
       <div
-        ref={containerRef}
         className="markdown-body virtual-scroll-container"
         style={{ fontSize: `${fontSize}px` }}
       >

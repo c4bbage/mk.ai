@@ -62,7 +62,7 @@ describe('generateFullHTML', () => {
   it('handles empty content', () => {
     const html = generateFullHTML('', 'github');
     expect(html).toContain('<!DOCTYPE html>');
-    expect(html).toContain('<div class="markdown-body">');
+    expect(html).toContain('<div class="markdown-body code-theme-atom-one-dark">');
   });
 
   it('renders tables in exported HTML', () => {

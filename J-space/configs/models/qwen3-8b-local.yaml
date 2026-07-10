@@ -1,0 +1,26 @@
+# Qwen3-8B, LOCAL bf16 checkpoint already on h202 (no HF download; the box is
+# air-gapped). 16.4 GB weights, d_model=4096, 36 layers. Sharded across the
+# fragmented free VRAM (~48 GB across 8 GPUs) with a per-GPU cap that respects
+# the memory the production services are using.
+#
+# NOTE: this shards onto GPUs that are actively serving production models. Keep
+# the fit small (few prompts, sparse layers, small dim_batch/seq) so the extra
+# activation memory stays well within headroom.
+name: qwen3-8b-local
+hf_path: /data/nfs_share/checkpoints/qwen3-8B-full-tuolaji_classic-p0.1.0-d2-r1
+# This fine-tune's tokenizer_config.json has a malformed extra_special_tokens
+# (a list, not a dict); use the clean same-family Qwen3 tokenizer instead.
+tokenizer_path: /data/Qwen3-32B/Qwen3-32B
+dtype: bfloat16
+device_map: auto
+# Cap each GPU below its free headroom (~6 GB free) so auto-sharding never
+# collides with the live services; leaves room on cpu for overflow.
+max_memory: {"0": "4GiB", "1": "4GiB", "2": "4GiB", "3": "4GiB", "4": "4GiB", "5": "4GiB", "6": "4GiB", "7": "4GiB", "cpu": "200GiB"}
+checkpoint_quant: none
+source_layers: every4             # sparse subset to bound fit cost on shared GPUs
+dim_batch: 4
+max_seq_len: 64
+skip_first: 8
+n_prompts: 20
+corpus: /data/corpus_real.txt
+notes: "Local Qwen3-8B bf16 fine-tune. Shards across fragmented free VRAM."

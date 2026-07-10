@@ -1,0 +1,15 @@
+# Tiny validation target. bf16 ~1.2 GB — fits in the ~6 GB/GPU headroom that
+# h202 currently has free while the big models are being served. Use this to
+# smoke-test the whole fit -> apply -> serve pipeline end to end.
+name: qwen3-0.6b
+hf_path: Qwen/Qwen3-0.6B          # auto-downloads from HF on first use
+dtype: bfloat16
+device_map: {"": 0}               # pin to a single GPU
+checkpoint_quant: none
+source_layers: workspace          # middle band of the depth
+dim_batch: 16
+max_seq_len: 128
+skip_first: 8
+n_prompts: 60
+corpus: null                      # -> wikitext (needs `datasets`); override with --corpus
+notes: "Tiny Qwen3 dense model; fits current GPU headroom. Pipeline smoke test."

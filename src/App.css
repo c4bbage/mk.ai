@@ -63,7 +63,7 @@ body {
 .tab-item.active {
   background: #fff;
   color: #24292e;
-  border-bottom: 2px solid #667eea;
+  border-bottom: 2px solid var(--outline-accent, #667eea);
 }
 
 .tab-name {
@@ -147,21 +147,21 @@ body {
   gap: 0;
 }
 
-/* ===== 文件树面板 ===== */
+/* ===== 文件树面板（背景/边框跟随文章主题 CSS 变量） ===== */
 .file-tree-panel {
   width: 240px;
   flex-shrink: 0;
-  background: #f7f7f8;
-  border-right: 1px solid #e2e2e4;
+  background: var(--outline-panel-bg, #f7f7f8);
+  border-right: 1px solid var(--outline-border, #e2e2e4);
   overflow: hidden;
 }
 
-/* ===== 大纲面板 ===== */
+/* ===== 大纲面板（背景/边框跟随文章主题 CSS 变量） ===== */
 .outline-panel {
   width: 220px;
   flex-shrink: 0;
-  background: #f7f7f8;
-  border-right: 1px solid #e2e2e4;
+  background: var(--outline-panel-bg, #f7f7f8);
+  border-right: 1px solid var(--outline-border, #e2e2e4);
   overflow: hidden;
 }
 
@@ -251,6 +251,16 @@ body {
   }
 }
 
+/* ===== 状态栏响应式: 窄窗口隐藏低优先级信息 ===== */
+@media (max-width: 900px) {
+  .status-optional { display: none !important; }
+}
+
+@media (max-width: 700px) {
+  .status-bar-right { gap: 8px; }
+  .status-bar-left .status-sep { display: none; }
+}
+
 /* ===== 暗色模式适配 ===== */
 [data-color-mode="dark"] .app {
   background: #1e1e1e;
@@ -265,10 +275,9 @@ body {
   border-left-color: #3a3a3a;
 }
 
-[data-color-mode="dark"] .file-tree-panel,
-[data-color-mode="dark"] .outline-panel {
-  background: #252526;
-  border-right-color: #3a3a3a;
+[data-color-mode="dark"] .file-tree-panel {
+  background: var(--outline-panel-bg, #252526);
+  border-right-color: var(--outline-border, #3a3a3a);
 }
 
 /* ===== 底部状态栏 ===== */
@@ -300,11 +309,89 @@ body {
   align-items: center;
   gap: 14px;
   white-space: nowrap;
+  overflow: hidden;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .status-item {
   display: inline-flex;
   align-items: center;
+}
+
+.status-save {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.status-modified {
+  color: #e74c3c;
+}
+
+.status-saved {
+  color: #2ecc71;
+  opacity: 0.7;
+}
+
+.status-filename {
+  font-weight: 500;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-sep {
+  opacity: 0.3;
+}
+
+.status-view-switcher {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+}
+
+.status-view-sep {
+  opacity: 0.3;
+  margin: 0 1px;
+}
+
+.status-view-btn {
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 3px;
+  transition: background 0.12s, color 0.12s;
+  opacity: 0.55;
+}
+
+.status-view-btn:hover {
+  background: rgba(102, 126, 234, 0.12);
+  opacity: 0.85;
+}
+
+.status-view-btn.active {
+  color: #667eea;
+  font-weight: 600;
+  opacity: 1;
+}
+
+.status-sel {
+  color: #667eea;
+}
+
+.status-theme {
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 3px;
+  transition: background 0.12s, color 0.12s;
+}
+
+.status-theme:hover {
+  background: rgba(102, 126, 234, 0.12);
+  color: #667eea;
+}
+
+.status-theme:active {
+  background: rgba(102, 126, 234, 0.2);
 }
 
 .status-composing {
@@ -321,4 +408,29 @@ body {
   background: rgba(255, 255, 255, 0.03);
   border-top-color: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.45);
+}
+
+[data-color-mode="dark"] .status-theme:hover {
+  background: color-mix(in srgb, var(--outline-accent, #667eea) 20%, transparent);
+  color: var(--outline-accent, #a5b4fc);
+}
+
+[data-color-mode="dark"] .status-sel {
+  color: var(--outline-accent, #a5b4fc);
+}
+
+[data-color-mode="dark"] .status-view-btn:hover {
+  background: color-mix(in srgb, var(--outline-accent, #667eea) 20%, transparent);
+}
+
+[data-color-mode="dark"] .status-view-btn.active {
+  color: var(--outline-accent, #a5b4fc);
+}
+
+[data-color-mode="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+[data-color-mode="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }

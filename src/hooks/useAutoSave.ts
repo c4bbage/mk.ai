@@ -35,6 +35,7 @@ export function useAutoSave({
 }: AutoSaveOptions) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedContentRef = useRef<string>(content);
+  const lastFilePathRef = useRef<string | undefined>(filePath);
   const contentRef = useRef(content);
   const filePathRef = useRef(filePath);
   const isModifiedRef = useRef(isModified);
@@ -46,6 +47,15 @@ export function useAutoSave({
     isModifiedRef.current = isModified;
     onSaveRef.current = onSave;
   }, [content, filePath, isModified, onSave]);
+
+  // Reset lastSavedContentRef when filePath changes (tab switch / file open)
+  // so auto-save compares against the correct baseline
+  useEffect(() => {
+    if (filePath !== lastFilePathRef.current) {
+      lastSavedContentRef.current = content;
+      lastFilePathRef.current = filePath;
+    }
+  }, [filePath, content]);
 
   // 防抖保存到文件
   useEffect(() => {

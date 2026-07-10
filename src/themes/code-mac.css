@@ -1,0 +1,130 @@
+/* ===== 代码主题：Mac 风格  (源自 wechat.jeffjade.com) ===== */
+/*
+
+XCode style (c) Angel Garcia <angelgarcia.mail@gmail.com>
+
+*/
+
+.code-theme-mac .hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 16px;
+  background: #fff;
+  color: black;
+}
+
+/* Gray DOCTYPE selectors like WebKit */
+.xml .code-theme-mac .hljs-meta {
+  color: #c0c0c0;
+}
+
+.code-theme-mac .hljs-comment,
+.code-theme-mac .hljs-quote {
+  color: #007400;
+}
+
+.code-theme-mac .hljs-tag,
+.code-theme-mac .hljs-attribute,
+.code-theme-mac .hljs-keyword,
+.code-theme-mac .hljs-selector-tag,
+.code-theme-mac .hljs-literal,
+.code-theme-mac .hljs-name {
+  color: #aa0d91;
+}
+
+.code-theme-mac .hljs-variable,
+.code-theme-mac .hljs-template-variable {
+  color: #3F6E74;
+}
+
+.code-theme-mac .hljs-code,
+.code-theme-mac .hljs-string,
+.code-theme-mac .hljs-meta-string {
+  color: #c41a16;
+}
+
+.code-theme-mac .hljs-regexp,
+.code-theme-mac .hljs-link {
+  color: #0E0EFF;
+}
+
+.code-theme-mac .hljs-title,
+.code-theme-mac .hljs-symbol,
+.code-theme-mac .hljs-bullet,
+.code-theme-mac .hljs-number {
+  color: #1c00cf;
+}
+
+.code-theme-mac .hljs-section,
+.code-theme-mac .hljs-meta {
+  color: #643820;
+}
+
+
+.code-theme-mac .hljs-class .code-theme-mac .hljs-title,
+.code-theme-mac .hljs-type,
+.code-theme-mac .hljs-built_in,
+.code-theme-mac .hljs-builtin-name,
+.code-theme-mac .hljs-params {
+  color: #5c2699;
+}
+
+.code-theme-mac .hljs-attr {
+  color: #836C28;
+}
+
+.code-theme-mac .hljs-subst {
+  color: #000;
+}
+
+.code-theme-mac .hljs-formula {
+  background-color: #eee;
+  font-style: italic;
+}
+
+.code-theme-mac .hljs-addition {
+  background-color: #baeeba;
+}
+
+.code-theme-mac .hljs-deletion {
+  background-color: #ffc8bd;
+}
+
+.code-theme-mac .hljs-selector-id,
+.code-theme-mac .hljs-selector-class {
+  color: #9b703f;
+}
+
+.code-theme-mac .hljs-doctag,
+.code-theme-mac .hljs-strong {
+  font-weight: bold;
+}
+
+.code-theme-mac .hljs-emphasis {
+  font-style: italic;
+}
+
+.preview-container.code-theme-mac .markdown-body .custom code {
+  padding-top: 15px;
+  background: #fff;
+  border-radius: 5px;
+}
+
+.preview-container.code-theme-mac .markdown-body .custom:before {
+  content: '';
+  display:block;
+  background: url(https://my-wechat.mdnice.com/point.png);
+  height: 30px;
+  width: 100%;
+  background-size:40px;
+  background-repeat: no-repeat;
+  background-color: #fff;
+  margin-bottom: -7px;
+  border-radius: 5px;
+  background-position: 10px 10px;
+}
+
+.preview-container.code-theme-mac .markdown-body .custom {
+  border-radius: 5px;
+  box-shadow: rgba(0, 0, 0, 0.55) 0px 2px 10px;
+}

@@ -10,9 +10,6 @@
   min-height: 100%;
   box-sizing: border-box;
   padding: 24px;
-  content-visibility: auto;
-  contain: layout style paint;
-  contain-intrinsic-size: 800px;
 }
 
 /* 滚动条样式 */
@@ -82,16 +79,18 @@
 }
 
 /* 仅在支持时启用内容可见性与容器隔离 */
+/* 注意：不在 .markdown-body 整体设 content-visibility，会导致 scrollIntoView 不准 */
+/* 改为在 .preview-block（虚拟预览的单个块）上使用 */
 @supports (content-visibility: auto) {
-  .preview-container .markdown-body {
-    content-visibility: auto;
-    contain: layout style paint;
-    contain-intrinsic-size: 800px;
-  }
   .preview-block {
     content-visibility: auto;
-    contain: layout style paint;
+    contain: layout style;
     contain-intrinsic-size: 200px;
+  }
+  /* mermaid 图表需要 paint 不被裁剪（SVG 异步插入后需重新测量尺寸） */
+  .preview-block.preview-block-mermaid {
+    content-visibility: visible;
+    contain: none;
   }
 }
 
@@ -120,7 +119,7 @@
   margin-bottom: 16px;
   /* 将每个块隔离，减少重排影响范围 */
   content-visibility: auto;
-  contain: layout style paint;
+  contain: layout style;
   contain-intrinsic-size: 200px;
 }
 

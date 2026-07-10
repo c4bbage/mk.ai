@@ -1,0 +1,100 @@
+/* ===== 代码主题：GitHub  (源自 wechat.jeffjade.com) ===== */
+/*
+
+github.com style (c) Vasily Polovnyov <vast@whiteants.net>
+
+*/
+
+.code-theme-github .hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 16px;
+  color: #333;
+  background: #f8f8f8;
+}
+
+.code-theme-github .hljs-comment,
+.code-theme-github .hljs-quote {
+  color: #998;
+  font-style: italic;
+}
+
+.code-theme-github .hljs-keyword,
+.code-theme-github .hljs-selector-tag,
+.code-theme-github .hljs-subst {
+  color: #333;
+  font-weight: bold;
+}
+
+.code-theme-github .hljs-number,
+.code-theme-github .hljs-literal,
+.code-theme-github .hljs-variable,
+.code-theme-github .hljs-template-variable,
+.code-theme-github .hljs-tag .code-theme-github .hljs-attr {
+  color: #008080;
+}
+
+.code-theme-github .hljs-string,
+.code-theme-github .hljs-doctag {
+  color: #d14;
+}
+
+.code-theme-github .hljs-title,
+.code-theme-github .hljs-section,
+.code-theme-github .hljs-selector-id {
+  color: #900;
+  font-weight: bold;
+}
+
+.code-theme-github .hljs-subst {
+  font-weight: normal;
+}
+
+.code-theme-github .hljs-type,
+.code-theme-github .hljs-class .code-theme-github .hljs-title {
+  color: #458;
+  font-weight: bold;
+}
+
+.code-theme-github .hljs-tag,
+.code-theme-github .hljs-name,
+.code-theme-github .hljs-attribute {
+  color: #000080;
+  font-weight: normal;
+}
+
+.code-theme-github .hljs-regexp,
+.code-theme-github .hljs-link {
+  color: #009926;
+}
+
+.code-theme-github .hljs-symbol,
+.code-theme-github .hljs-bullet {
+  color: #990073;
+}
+
+.code-theme-github .hljs-built_in,
+.code-theme-github .hljs-builtin-name {
+  color: #0086b3;
+}
+
+.code-theme-github .hljs-meta {
+  color: #999;
+  font-weight: bold;
+}
+
+.code-theme-github .hljs-deletion {
+  background: #fdd;
+}
+
+.code-theme-github .hljs-addition {
+  background: #dfd;
+}
+
+.code-theme-github .hljs-emphasis {
+  font-style: italic;
+}
+
+.code-theme-github .hljs-strong {
+  font-weight: bold;
+}

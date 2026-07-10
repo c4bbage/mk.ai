@@ -4,10 +4,8 @@
  */
 
 import { parseMarkdownToBlocks, type MarkdownBlock } from '../lib/markdown-blocks';
-import { parseMarkdown as parseMarkdownFull } from '../lib/markdown';
-import { marked, Renderer } from 'marked';
+import { parseMarkdownBlock } from '../lib/markdown';
 import { sanitizeMarkdownHtml } from '../lib/sanitize';
-import { protectSpecialBlocks, restoreSpecialBlocks } from '../lib/placeholders';
 
 // naive code fence language detection
 function detectCodeLanguage(content: string): string | undefined {
@@ -19,14 +17,17 @@ function detectCodeLanguage(content: string): string | undefined {
   return undefined;
 }
 
-// lightweight string hash for caching keys
+// Stronger content hash for caching keys — dual djb2 + length to minimise collisions
 function simpleHash(str: string): string {
-  let hash = 0;
+  if (str.length < 256) return `s:${str}`;
+  let h1 = 5381;
+  let h2 = 52711;
   for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0;
+    const c = str.charCodeAt(i);
+    h1 = ((h1 << 5) + h1 + c) | 0;
+    h2 = ((h2 * 33) ^ c) >>> 0;
   }
-  return `h${hash}`;
+  return `h${(h1 >>> 0)}:${h2 >>> 0}:${str.length}`;
 }
 
 export interface PipelineRequest {
@@ -67,31 +68,14 @@ function handleRender(id: string, content: string) {
     const blocks = parseMarkdownToBlocks(content);
     let cursor = 0;
 
-    // Reuse a single Renderer instance with custom image/link rendering
-    // matching markdown.ts to keep virtual preview consistent
-    const fastRenderer = new Renderer();
-    fastRenderer.image = ({ href, title, text }) => {
-      const titleAttr = title ? ` title="${title}"` : '';
-      return `<img src="${href}" alt="${text || ''}"${titleAttr} loading="lazy" decoding="async" class="md-image" />`;
-    };
-    fastRenderer.link = ({ href, title, text }) => {
-      const titleAttr = title ? ` title="${title}"` : '';
-      return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
-    };
-
     const rendered: BlockRender[] = blocks.map((block) => {
       const blockLines = block.content.split('\n').length;
       const startLine = cursor;
       const endLine = cursor + blockLines - 1;
       cursor = endLine + 1;
 
-      const { processed, mathBlocks, mermaidBlocks } = protectSpecialBlocks(block.content);
-
-      const rawHtmlFast = marked.parse(processed, { renderer: fastRenderer, gfm: true, breaks: true }) as string;
-
-      const restoredHtml = restoreSpecialBlocks(rawHtmlFast, mathBlocks, mermaidBlocks);
-
-      const safeHtmlFast = sanitizeMarkdownHtml(restoredHtml);
+      const rawHtml = parseMarkdownBlock(block.content);
+      const safeHtml = sanitizeMarkdownHtml(rawHtml);
       const language = (block.type === 'code' && detectCodeLanguage(block.content)) || undefined;
       const contentHash = simpleHash(block.content);
 
@@ -100,7 +84,7 @@ function handleRender(id: string, content: string) {
         type: block.type,
         content: block.content,
         level: block.level,
-        html: safeHtmlFast,
+        html: safeHtml,
         startLine,
         endLine,
         language,
@@ -133,8 +117,8 @@ function handleHighlight(id: string, blockId: string, content: string, _language
   void _language; // reserved for future language-specific highlight
   const t0 = performance.now();
   try {
-    const htmlFull = parseMarkdownFull(content);
-    const safeHtml = sanitizeMarkdownHtml(htmlFull);
+    const html = parseMarkdownBlock(content);
+    const safeHtml = sanitizeMarkdownHtml(html);
     const contentHash = simpleHash(content);
     self.postMessage({
       type: 'highlighted',
@@ -145,13 +129,13 @@ function handleHighlight(id: string, blockId: string, content: string, _language
       contentHash,
     });
   } catch (e) {
-    console.warn('[PipelineWorker] highlight failed, fallback to fast HTML:', e);
-    const htmlFallback = sanitizeMarkdownHtml(marked.parse(content) as string);
+    console.warn('[PipelineWorker] highlight failed, fallback to escaped text:', e);
+    const escaped = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     self.postMessage({
       type: 'highlighted',
       id,
       blockId,
-      html: htmlFallback,
+      html: `<pre><code>${escaped}</code></pre>`,
       time: performance.now() - t0,
       contentHash: simpleHash(content),
     });

@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { perfMark, perfMeasure } from '../lib/performance';
 import { parseMarkdownToBlocks, type MarkdownBlock } from '../lib/markdown-blocks';
-import { parseMarkdown } from '../lib/markdown';
+import { parseMarkdownBlock } from '../lib/markdown';
 import { sanitizeMarkdownHtml } from '../lib/sanitize';
 
 export interface RenderBlock {
@@ -164,9 +164,10 @@ export function usePipelineWorker({ content }: UsePipelineWorkerOptions): UsePip
             const startLine = cursor;
             const endLine = cursor + blockLines - 1;
             cursor = endLine + 1;
-            const rawHtml = parseMarkdown(block.content);
+            const rawHtml = parseMarkdownBlock(block.content);
             const safeHtml = sanitizeMarkdownHtml(rawHtml);
-            return { id: block.id, type: block.type, html: safeHtml, startLine, endLine } as RenderBlock;
+            const contentHash = block.content; // use raw content as hash (string comparison)
+            return { id: block.id, type: block.type, content: block.content, level: block.level, html: safeHtml, startLine, endLine, contentHash } as RenderBlock;
           });
           setBlocks(rendered);
           setRenderTime(performance.now() - t0);

@@ -1,0 +1,105 @@
+/* ===== 代码主题：XCode  (源自 wechat.jeffjade.com) ===== */
+/*
+
+XCode style (c) Angel Garcia <angelgarcia.mail@gmail.com>
+
+*/
+
+.code-theme-xcode .hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 16px;
+  background: #fff;
+  color: black;
+}
+
+/* Gray DOCTYPE selectors like WebKit */
+.xml .code-theme-xcode .hljs-meta {
+  color: #c0c0c0;
+}
+
+.code-theme-xcode .hljs-comment,
+.code-theme-xcode .hljs-quote {
+  color: #007400;
+}
+
+.code-theme-xcode .hljs-tag,
+.code-theme-xcode .hljs-attribute,
+.code-theme-xcode .hljs-keyword,
+.code-theme-xcode .hljs-selector-tag,
+.code-theme-xcode .hljs-literal,
+.code-theme-xcode .hljs-name {
+  color: #aa0d91;
+}
+
+.code-theme-xcode .hljs-variable,
+.code-theme-xcode .hljs-template-variable {
+  color: #3F6E74;
+}
+
+.code-theme-xcode .hljs-code,
+.code-theme-xcode .hljs-string,
+.code-theme-xcode .hljs-meta-string {
+  color: #c41a16;
+}
+
+.code-theme-xcode .hljs-regexp,
+.code-theme-xcode .hljs-link {
+  color: #0E0EFF;
+}
+
+.code-theme-xcode .hljs-title,
+.code-theme-xcode .hljs-symbol,
+.code-theme-xcode .hljs-bullet,
+.code-theme-xcode .hljs-number {
+  color: #1c00cf;
+}
+
+.code-theme-xcode .hljs-section,
+.code-theme-xcode .hljs-meta {
+  color: #643820;
+}
+
+
+.code-theme-xcode .hljs-class .code-theme-xcode .hljs-title,
+.code-theme-xcode .hljs-type,
+.code-theme-xcode .hljs-built_in,
+.code-theme-xcode .hljs-builtin-name,
+.code-theme-xcode .hljs-params {
+  color: #5c2699;
+}
+
+.code-theme-xcode .hljs-attr {
+  color: #836C28;
+}
+
+.code-theme-xcode .hljs-subst {
+  color: #000;
+}
+
+.code-theme-xcode .hljs-formula {
+  background-color: #eee;
+  font-style: italic;
+}
+
+.code-theme-xcode .hljs-addition {
+  background-color: #baeeba;
+}
+
+.code-theme-xcode .hljs-deletion {
+  background-color: #ffc8bd;
+}
+
+.code-theme-xcode .hljs-selector-id,
+.code-theme-xcode .hljs-selector-class {
+  color: #9b703f;
+}
+
+.code-theme-xcode .hljs-doctag,
+.code-theme-xcode .hljs-strong {
+  font-weight: bold;
+}
+
+.code-theme-xcode .hljs-emphasis {
+  font-style: italic;
+}

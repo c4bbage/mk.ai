@@ -2,7 +2,7 @@ import { useEffect, useRef, useMemo, useCallback, useState, forwardRef, useImper
 import { parseMarkdown } from '../../lib/markdown';
 import { sanitizeMarkdownHtml } from '../../lib/sanitize';
 import { lazyLoadKaTeX, lazyLoadMermaid, runWhenIdle } from '../../lib/performance';
-import { THEMES } from '../../themes';
+import { THEMES, getCodeThemeClass } from '../../themes';
 // import 'katex/dist/katex.min.css';
 // import 'highlight.js/styles/github.css';
 import './Preview.css';
@@ -11,6 +11,7 @@ import { perfMark } from '../../lib/performance';
 interface PreviewProps {
   content: string;
   theme: string;
+  codeTheme?: string;
   fontSize?: number;
   onScroll?: (scrollTop: number, scrollHeight: number, clientHeight: number) => void;
   // IME 组合输入期间暂停预览更新
@@ -32,21 +33,23 @@ function getDebounceDelay(contentLength: number): number {
 const PreviewComponent = forwardRef<PreviewRef, PreviewProps>(({
   content,
   theme,
+  codeTheme,
   fontSize = 16,
   onScroll,
   isComposing = false,
 }, ref) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedContent, setDebouncedContent] = useState(content);
   const lastContentRef = useRef(content);
 
-  // 暴露方法给父组件
+  // 暴露方法给父组件 — scrollContainerRef 指向 .preview-container（真正的可滚动元素）
   useImperativeHandle(ref, () => ({
-    getScrollContainer: () => containerRef.current,
+    getScrollContainer: () => scrollContainerRef.current,
     scrollTo: (top: number) => {
-      if (containerRef.current) {
-        containerRef.current.scrollTop = top;
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = top;
       }
     },
   }));
@@ -90,11 +93,14 @@ const PreviewComponent = forwardRef<PreviewRef, PreviewProps>(({
     return themeConfig?.className || 'theme-github';
   }, [theme]);
 
+  // 获取代码主题类名
+  const codeThemeClass = useMemo(() => getCodeThemeClass(codeTheme ?? ''), [codeTheme]);
+
   // 渲染特殊元素 (KaTeX, Mermaid)
   const renderSpecialElements = useCallback(async () => {
-    if (!containerRef.current) return;
+    if (!contentRef.current) return;
 
-    const el = containerRef.current;
+    const el = contentRef.current;
     const hasMath = /\$|\$\$/m.test(lastContentRef.current);
     const hasMermaid = /```mermaid/m.test(lastContentRef.current);
 
@@ -115,7 +121,7 @@ const PreviewComponent = forwardRef<PreviewRef, PreviewProps>(({
 
   // 主题切换时：重新初始化 Mermaid 主题 + 重置渲染状态
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!contentRef.current) return;
     const hasMermaid = /```mermaid/m.test(lastContentRef.current);
     if (!hasMermaid) return;
 
@@ -124,14 +130,14 @@ const PreviewComponent = forwardRef<PreviewRef, PreviewProps>(({
       const { reinitMermaid } = await import('../../lib/mermaid');
       const isDark = document.documentElement.getAttribute('data-color-mode') === 'dark';
       await reinitMermaid(isDark ? 'dark' : 'default');
-      if (cancelled || !containerRef.current) return;
+      if (cancelled || !contentRef.current) return;
       // 移除已渲染标记 + 清空内容，让 renderMermaidInElement 重新渲染
-      containerRef.current.querySelectorAll('.mermaid-rendered').forEach(node => {
+      contentRef.current.querySelectorAll('.mermaid-rendered').forEach(node => {
         node.classList.remove('mermaid-rendered');
         node.innerHTML = '';
       });
       const { renderMermaidInElement } = await import('../../lib/mermaid');
-      await renderMermaidInElement(containerRef.current);
+      await renderMermaidInElement(contentRef.current);
     })();
     return () => { cancelled = true; };
   }, [theme]);
@@ -147,7 +153,7 @@ const PreviewComponent = forwardRef<PreviewRef, PreviewProps>(({
 
   // 监听滚动事件
   useEffect(() => {
-    const container = containerRef.current;
+    const container = scrollContainerRef.current;
     if (!container || !onScroll) return;
 
     const handleScroll = () => {
@@ -162,9 +168,9 @@ const PreviewComponent = forwardRef<PreviewRef, PreviewProps>(({
   }, [onScroll]);
 
   return (
-    <div className={`preview-container ${themeClass}`}>
+    <div ref={scrollContainerRef} className={`preview-container ${themeClass} ${codeThemeClass}`}>
       <div
-        ref={containerRef}
+        ref={contentRef}
         className="markdown-body"
         style={{ fontSize: `${fontSize}px` }}
         dangerouslySetInnerHTML={{ __html: html }}
@@ -179,6 +185,7 @@ export const Preview = memo(PreviewComponent, (prevProps, nextProps) => {
   return (
     prevProps.content === nextProps.content &&
     prevProps.theme === nextProps.theme &&
+    prevProps.codeTheme === nextProps.codeTheme &&
     prevProps.fontSize === nextProps.fontSize &&
     prevProps.isComposing === nextProps.isComposing
   );

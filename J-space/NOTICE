@@ -1,0 +1,21 @@
+J-space
+Copyright 2026
+
+This product bundles a vendored copy of the Jacobian-lens reference
+implementation under `vendor/jlens/`:
+
+  jlens — Jacobian lens
+  Copyright 2026 Anthropic PBC
+  SPDX-License-Identifier: Apache-2.0
+  Source: https://github.com/anthropics/jacobian-lens
+
+The vendored code is unmodified and used under the Apache License 2.0 (see
+vendor/jlens/LICENSE). The `jspace` package in this repository is an original
+extension layer (model registry, differentiable loading, torch interventions,
+serving UI, and remote orchestration) built on top of that reference.
+
+Companion paper: "Verbalizable Representations Form a Global Workspace in
+Language Models", https://transformer-circuits.pub/2026/workspace/index.html
+
+The Mac/MLX port that inspired the multi-model goal:
+  jlens-qwen36 — https://github.com/WeZZard/jlens-qwen36 (Apache-2.0)

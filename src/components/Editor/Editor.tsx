@@ -12,6 +12,17 @@ import type { ImageStorageStrategy } from '../../types';
 import './Editor.css';
 import { perfMark } from '../../lib/performance';
 
+/** CJK-aware word count (matches StatusBar computeStats logic) */
+function countWords(text: string): number {
+  const cjk = (text.match(/[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/g) || []).length;
+  const nonCjkWords = text
+    .replace(/[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+  return cjk + nonCjkWords;
+}
+
 interface EditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -24,6 +35,7 @@ interface EditorProps {
   onScroll?: (scrollTop: number, scrollHeight: number, clientHeight: number) => void;
   onCompositionStart?: () => void;
   onCompositionEnd?: () => void;
+  onCursorChange?: (line: number, col: number, selectionChars: number, selectionWords: number) => void;
 }
 
 export interface EditorRef {
@@ -36,6 +48,12 @@ export interface EditorRef {
   wrapSelection: (prefix: string, suffix: string) => void;
   /** Set heading level for current line (1-6), 0 to remove */
   setHeadingLevel: (level: number) => void;
+  /** Set heading prefix at a specific line (undo-friendly) */
+  setHeadingAtLine: (lineIndex: number, newPrefix: string) => void;
+  /** Move lines [fromStart, fromEnd) to insertAt (undo-friendly) */
+  moveLines: (fromStart: number, fromEnd: number, insertAt: number) => void;
+  /** Scroll to a specific 0-based line index */
+  scrollToLine: (lineIndex: number) => void;
   /** Insert text at cursor */
   insertAtCursor: (text: string) => void;
 }
@@ -52,6 +70,7 @@ export const Editor = forwardRef<EditorRef, EditorProps>(function Editor({
   onScroll,
   onCompositionStart,
   onCompositionEnd,
+  onCursorChange,
 }, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<EditorView | null>(null);
@@ -71,6 +90,8 @@ export const Editor = forwardRef<EditorRef, EditorProps>(function Editor({
   useEffect(() => { onCompositionStartRef.current = onCompositionStart; }, [onCompositionStart]);
   const onCompositionEndRef = useRef(onCompositionEnd);
   useEffect(() => { onCompositionEndRef.current = onCompositionEnd; }, [onCompositionEnd]);
+  const onCursorChangeRef = useRef(onCursorChange);
+  useEffect(() => { onCursorChangeRef.current = onCursorChange; }, [onCursorChange]);
 
   // 暴露方法给父组件
   useImperativeHandle(ref, () => ({
@@ -121,11 +142,59 @@ export const Editor = forwardRef<EditorRef, EditorProps>(function Editor({
       view.dispatch({ changes: { from: line.from, to: line.to, insert: newText } });
       view.focus();
     },
+    setHeadingAtLine: (lineIndex: number, newPrefix: string) => {
+      const view = editorRef.current;
+      if (!view) return;
+      const lineCount = view.state.doc.lines;
+      if (lineIndex < 0 || lineIndex >= lineCount) return;
+      const line = view.state.doc.line(lineIndex + 1);
+      const stripped = line.text.replace(/^#{1,6}\s*/, '');
+      const newText = newPrefix ? `${newPrefix} ${stripped}` : stripped;
+      view.dispatch({ changes: { from: line.from, to: line.to, insert: newText } });
+      view.focus();
+    },
+    moveLines: (fromStart: number, fromEnd: number, insertAt: number) => {
+      const view = editorRef.current;
+      if (!view) return;
+      const doc = view.state.doc;
+      const lineCount = doc.lines;
+      if (fromStart < 0 || fromEnd > lineCount || fromStart >= fromEnd) return;
+
+      const lines = doc.toString().split('\n');
+      const movedBlock = lines.slice(fromStart, fromEnd);
+      const remaining = lines.slice(0, fromStart).concat(lines.slice(fromEnd));
+      const insertPos = insertAt > fromStart ? insertAt - (fromEnd - fromStart) : insertAt;
+      const clampedPos = Math.max(0, Math.min(insertPos, remaining.length));
+      const newLines = remaining.slice(0, clampedPos).concat(movedBlock, remaining.slice(clampedPos));
+
+      const rangeStart = Math.min(fromStart, clampedPos);
+      const rangeEnd = Math.max(fromEnd, clampedPos + movedBlock.length);
+      const newText = newLines.slice(rangeStart, rangeEnd).join('\n');
+
+      const startLine = doc.line(rangeStart + 1);
+      const endLine = doc.line(rangeEnd);
+      view.dispatch({
+        changes: { from: startLine.from, to: endLine.to, insert: newText },
+      });
+      view.focus();
+    },
     insertAtCursor: (text: string) => {
       const view = editorRef.current;
       if (!view) return;
       const pos = view.state.selection.main.head;
       view.dispatch({ changes: { from: pos, insert: text }, selection: { anchor: pos + text.length } });
+      view.focus();
+    },
+    scrollToLine: (lineIndex: number) => {
+      const view = editorRef.current;
+      if (!view) return;
+      const lineCount = view.state.doc.lines;
+      if (lineIndex < 0 || lineIndex >= lineCount) return;
+      const line = view.state.doc.line(lineIndex + 1);
+      view.dispatch({
+        selection: { anchor: line.from },
+        effects: EditorView.scrollIntoView(line.from, { y: 'start' }),
+      });
       view.focus();
     },
   }));
@@ -171,6 +240,18 @@ export const Editor = forwardRef<EditorRef, EditorProps>(function Editor({
         isInternalChange.current = true;
         onChangeRef.current(update.state.doc.toString());
         perfMark('editor_input_applied');
+      }
+      // Report cursor position + selection stats on doc / selection changes
+      if (update.docChanged || update.selectionSet) {
+        const sel = update.state.selection.main;
+        const line = update.state.doc.lineAt(sel.head);
+        const selText = update.state.sliceDoc(sel.from, sel.to);
+        onCursorChangeRef.current?.(
+          line.number,
+          sel.head - line.from + 1,
+          sel.to - sel.from,
+          countWords(selText),
+        );
       }
     });
 
@@ -282,6 +363,19 @@ export const Editor = forwardRef<EditorRef, EditorProps>(function Editor({
       state,
       parent: container,
     });
+
+    // Report initial cursor position + selection
+    {
+      const sel = state.selection.main;
+      const line = state.doc.lineAt(sel.head);
+      const selText = state.sliceDoc(sel.from, sel.to);
+      onCursorChangeRef.current?.(
+        line.number,
+        sel.head - line.from + 1,
+        sel.to - sel.from,
+        countWords(selText),
+      );
+    }
 
     // 暂存 handlePaste 供 cleanup 使用
     const pasteHandler = handlePaste;

@@ -1,5 +1,4 @@
 import { useMemo, useCallback, useRef, useState } from 'react';
-import { parseMarkdownToBlocks } from '../../lib/markdown-blocks';
 import './Outline.css';
 
 interface OutlineItem {
@@ -12,63 +11,71 @@ interface OutlineItem {
 interface OutlineProps {
   content: string;
   onItemClick?: (id: string) => void;
-  onHeadingsChange?: (newContent: string) => void;
+  onHeadingLevelChange?: (lineIndex: number, newPrefix: string) => void;
+  onHeadingMove?: (fromStart: number, fromEnd: number, insertAt: number) => void;
+  canEdit?: boolean;
 }
 
 function extractHeadings(content: string): OutlineItem[] {
-  const blocks = parseMarkdownToBlocks(content);
+  const lines = content.split('\n');
   const headings: OutlineItem[] = [];
   let idCounter = 0;
-  let lineCursor = 0;
+  let inCodeBlock = false;
+  let inMathBlock = false;
 
-  for (const block of blocks) {
-    const blockLines = block.content.split('\n').length;
-    if (block.type === 'heading') {
-      const match = block.content.match(/^(#{1,6})\s+(.+)$/);
-      if (match) {
-        headings.push({
-          level: match[1].length,
-          text: match[2].trim(),
-          id: `heading-${idCounter++}`,
-          lineIndex: lineCursor,
-        });
-      }
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+
+    if (trimmed.startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      continue;
     }
-    lineCursor += blockLines;
+    if (trimmed === '$$') {
+      inMathBlock = !inMathBlock;
+      continue;
+    }
+    if (inCodeBlock || inMathBlock) continue;
+
+    const match = lines[i].match(/^(#{1,6})\s+(.+)$/);
+    if (match) {
+      const rawText = match[2].trim();
+      // Strip Markdown inline syntax for display: *italic*, **bold**, `code`, [text](url)
+      const displayText = rawText
+        .replace(/\*\*(.+?)\*\*/g, '$1')
+        .replace(/\*(.+?)\*/g, '$1')
+        .replace(/`(.+?)`/g, '$1')
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+        .replace(/<[^>]+>/g, '');
+      headings.push({
+        level: match[1].length,
+        text: displayText,
+        id: `heading-${idCounter++}`,
+        lineIndex: i,
+      });
+    }
   }
 
   return headings;
 }
 
-export function Outline({ content, onItemClick, onHeadingsChange }: OutlineProps) {
+export function Outline({ content, onItemClick, onHeadingLevelChange, onHeadingMove, canEdit }: OutlineProps) {
   const headings = useMemo(() => extractHeadings(content), [content]);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const dragCounter = useRef(0);
 
-  const modifyHeadingLine = useCallback((lineIdx: number, newPrefix: string) => {
-    if (!onHeadingsChange) return;
-    const lines = content.split('\n');
-    if (lineIdx >= lines.length) return;
-    const line = lines[lineIdx];
-    const stripped = line.replace(/^#{1,6}\s*/, '');
-    lines[lineIdx] = newPrefix ? `${newPrefix} ${stripped}` : stripped;
-    onHeadingsChange(lines.join('\n'));
-  }, [content, onHeadingsChange]);
-
   const handlePromote = useCallback((e: React.MouseEvent, h: OutlineItem) => {
     e.stopPropagation();
     const newLevel = Math.max(1, h.level - 1);
-    modifyHeadingLine(h.lineIndex, '#'.repeat(newLevel));
-  }, [modifyHeadingLine]);
+    onHeadingLevelChange?.(h.lineIndex, '#'.repeat(newLevel));
+  }, [onHeadingLevelChange]);
 
   const handleDemote = useCallback((e: React.MouseEvent, h: OutlineItem) => {
     e.stopPropagation();
     const newLevel = Math.min(6, h.level + 1);
-    modifyHeadingLine(h.lineIndex, '#'.repeat(newLevel));
-  }, [modifyHeadingLine]);
+    onHeadingLevelChange?.(h.lineIndex, '#'.repeat(newLevel));
+  }, [onHeadingLevelChange]);
 
-  // Drag reorder: move the heading block (all its lines) to a new position
   const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
     setDragIndex(index);
     e.dataTransfer.effectAllowed = 'move';
@@ -93,7 +100,7 @@ export function Outline({ content, onItemClick, onHeadingsChange }: OutlineProps
   }, []);
 
   const handleDrop = useCallback((index: number) => {
-    if (dragIndex === null || dragIndex === index || !onHeadingsChange) {
+    if (dragIndex === null || dragIndex === index || !onHeadingMove) {
       setDragIndex(null);
       setDragOverIndex(null);
       return;
@@ -104,23 +111,16 @@ export function Outline({ content, onItemClick, onHeadingsChange }: OutlineProps
 
     const fromStart = fromHeading.lineIndex;
     const fromEnd = headings[dragIndex + 1]?.lineIndex ?? lines.length;
-
-    const movedBlock = lines.slice(fromStart, fromEnd);
-    const blockLen = movedBlock.length;
-
-    const newLines = [...lines];
-    newLines.splice(fromStart, blockLen);
+    const blockLen = fromEnd - fromStart;
 
     const insertAt = toHeading.lineIndex > fromStart
       ? toHeading.lineIndex - blockLen
       : toHeading.lineIndex;
 
-    newLines.splice(insertAt, 0, ...movedBlock);
-
-    onHeadingsChange(newLines.join('\n'));
+    onHeadingMove(fromStart, fromEnd, insertAt);
     setDragIndex(null);
     setDragOverIndex(null);
-  }, [dragIndex, headings, content, onHeadingsChange]);
+  }, [dragIndex, headings, content, onHeadingMove]);
 
   if (headings.length === 0) {
     return (
@@ -138,7 +138,7 @@ export function Outline({ content, onItemClick, onHeadingsChange }: OutlineProps
       <div className="outline-header">
         <span className="outline-icon">📑</span>
         <span className="outline-title">大纲</span>
-        {onHeadingsChange && (
+        {canEdit && (
           <span className="outline-hint">拖拽排序 · ◀▶ 调级</span>
         )}
       </div>
@@ -149,7 +149,7 @@ export function Outline({ content, onItemClick, onHeadingsChange }: OutlineProps
             className={`outline-item outline-level-${heading.level} ${dragIndex === index ? 'dragging' : ''} ${dragOverIndex === index && dragIndex !== null && dragIndex !== index ? 'drag-over' : ''}`}
             style={{ paddingLeft: `${(heading.level - minLevel) * 16 + 12}px` }}
             onClick={() => onItemClick?.(heading.id)}
-            draggable={!!onHeadingsChange}
+            draggable={!!canEdit}
             onDragStart={(e) => handleDragStart(e, index)}
             onDragOver={(e) => handleDragOver(e, index)}
             onDragEnter={handleDragEnter}
@@ -159,7 +159,7 @@ export function Outline({ content, onItemClick, onHeadingsChange }: OutlineProps
           >
             <span className="outline-bullet">•</span>
             <span className="outline-text">{heading.text}</span>
-            {onHeadingsChange && (
+            {canEdit && (
               <span className="outline-controls">
                 <button
                   className="outline-level-btn"

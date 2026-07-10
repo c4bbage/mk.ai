@@ -17,6 +17,7 @@ export function protectSpecialBlocks(content: string): PlaceholderResult {
   const mathBlocks: string[] = [];
   const mermaidBlocks: string[] = [];
   const codeBlocks: string[] = [];
+  const inlineCodeBlocks: string[] = [];
 
   let processed = content;
 
@@ -32,6 +33,12 @@ export function protectSpecialBlocks(content: string): PlaceholderResult {
     return `%%CODE_BLOCK_${codeBlocks.length - 1}%%`;
   });
 
+  // Protect inline code `...` so $ inside it isn't treated as math
+  processed = processed.replace(/`([^`\n]+)`/g, (_m, code) => {
+    inlineCodeBlocks.push(`<code>${code}</code>`);
+    return `%%INLINE_CODE_${inlineCodeBlocks.length - 1}%%`;
+  });
+
   // Protect block-level math $$...$$
   processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (_, tex) => {
     mathBlocks.push(`<div class="math-block" data-tex="${encodeURIComponent(tex.trim())}"></div>`);
@@ -39,8 +46,14 @@ export function protectSpecialBlocks(content: string): PlaceholderResult {
   });
 
   // Protect inline math $...$
-  processed = processed.replace(/\$([^$\n]+?)\$/g, (_, tex) => {
-    mathBlocks.push(`<span class="math-inline" data-tex="${encodeURIComponent(tex.trim())}"></span>`);
+  // Filter out false positives: dollar amounts ($5) and prose with $ signs
+  processed = processed.replace(/\$([^$\n]+?)\$/g, (match, tex) => {
+    const inner = tex.trim();
+    // Skip dollar amounts: starts with digit (e.g. $5 and $10)
+    if (/^\d/.test(inner)) return match;
+    // Skip prose: 3+ word groups separated by spaces (e.g. "$5 and $10 is")
+    if (/\w\s+\w\s+\w/.test(inner)) return match;
+    mathBlocks.push(`<span class="math-inline" data-tex="${encodeURIComponent(inner)}"></span>`);
     return `%%MATH_BLOCK_${mathBlocks.length - 1}%%`;
   });
 
@@ -49,23 +62,31 @@ export function protectSpecialBlocks(content: string): PlaceholderResult {
     processed = processed.replace(`%%CODE_BLOCK_${i}%%`, blockSrc);
   });
 
+  // Restore inline code so marked can parse it (backticks must be present for marked)
+  inlineCodeBlocks.forEach((html, i) => {
+    // Re-wrap in backticks so marked recognizes it as inline code
+    const codeContent = html.match(/<code>([\s\S]*)<\/code>/)?.[1] ?? '';
+    processed = processed.replace(`%%INLINE_CODE_${i}%%`, '`' + codeContent + '`');
+  });
+
   return { processed, mathBlocks, mermaidBlocks };
 }
 
 /**
  * Restore math and mermaid placeholders in the rendered HTML.
+ * Uses replaceAll (global) to handle placeholders that appear multiple times.
  */
 export function restoreSpecialBlocks(html: string, mathBlocks: string[], mermaidBlocks: string[]): string {
   let restored = html;
 
   mathBlocks.forEach((placeholder, i) => {
-    restored = restored.replace(`%%MATH_BLOCK_${i}%%`, placeholder);
-    restored = restored.replace(`<p>%%MATH_BLOCK_${i}%%</p>`, placeholder);
+    restored = restored.replaceAll(`%%MATH_BLOCK_${i}%%`, placeholder);
+    restored = restored.replaceAll(`<p>%%MATH_BLOCK_${i}%%</p>`, placeholder);
   });
 
   mermaidBlocks.forEach((placeholder, i) => {
-    restored = restored.replace(`%%MERMAID_BLOCK_${i}%%`, placeholder);
-    restored = restored.replace(`<p>%%MERMAID_BLOCK_${i}%%</p>`, placeholder);
+    restored = restored.replaceAll(`%%MERMAID_BLOCK_${i}%%`, placeholder);
+    restored = restored.replaceAll(`<p>%%MERMAID_BLOCK_${i}%%</p>`, placeholder);
   });
 
   return restored;

@@ -1,0 +1,15 @@
+/* ===== 代码主题基座 ===== */
+/* 让代码块背景归代码主题管辖：pre 透明，由各 code-*.css 的 .code-theme-xxx .hljs 提供背景与 token 配色。
+ * 作用域限定在带 code-theme-* class 的预览容器，避免影响非代码主题场景。 */
+.preview-container[class*="code-theme-"] .markdown-body pre {
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0;
+}
+
+.preview-container[class*="code-theme-"] .markdown-body pre code.hljs {
+  display: block;
+  padding: 16px;
+  overflow-x: auto;
+  border-radius: 6px;
+}

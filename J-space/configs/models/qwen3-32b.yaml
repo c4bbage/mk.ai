@@ -1,0 +1,13 @@
+# Qwen3-32B dense, bf16 ~64 GB. Fits one 143 GB H20 with room for backward.
+name: qwen3-32b
+hf_path: /data/Qwen3-32B
+dtype: bfloat16
+device_map: auto
+checkpoint_quant: none
+source_layers: workspace
+dim_batch: 8
+max_seq_len: 128
+skip_first: 16
+n_prompts: 100
+corpus: /data/corpus_real.txt
+notes: "Qwen3-32B dense bf16."
