@@ -2,6 +2,7 @@ import { useEffect, useRef, useMemo, useCallback, useState, forwardRef, useImper
 import { parseMarkdown } from '../../lib/markdown';
 import { sanitizeMarkdownHtml } from '../../lib/sanitize';
 import { resolveImagePathsInHtml } from '../../lib/image-path';
+import { enhancePreviewDom } from '../../lib/preview-enhance';
 import { lazyLoadKaTeX, lazyLoadMermaid, runWhenIdle } from '../../lib/performance';
 import { THEMES, getCodeThemeClass } from '../../themes';
 // import 'katex/dist/katex.min.css';
@@ -16,6 +17,7 @@ interface PreviewProps {
   fontSize?: number;
   filePath?: string;
   onScroll?: (scrollTop: number, scrollHeight: number, clientHeight: number) => void;
+  onTaskToggle?: (taskIndex: number, checked: boolean) => void;
   // IME 组合输入期间暂停预览更新
   isComposing?: boolean;
 }
@@ -39,6 +41,7 @@ const PreviewComponent = forwardRef<PreviewRef, PreviewProps>(({
   fontSize = 16,
   filePath,
   onScroll,
+  onTaskToggle,
   isComposing = false,
 }, ref) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -151,6 +154,9 @@ const PreviewComponent = forwardRef<PreviewRef, PreviewProps>(({
     perfMark('preview_commit_start');
     runWhenIdle(() => {
       renderSpecialElements();
+      if (contentRef.current) {
+        enhancePreviewDom(contentRef.current);
+      }
       perfMark('preview_commit_end');
     }, 500);
   }, [html, renderSpecialElements]);
@@ -170,6 +176,19 @@ const PreviewComponent = forwardRef<PreviewRef, PreviewProps>(({
       container.removeEventListener('scroll', handleScroll);
     };
   }, [onScroll]);
+
+  // 监听 task-toggle 事件（来自 preview-enhance 的 checkbox 点击）
+  useEffect(() => {
+    const container = contentRef.current;
+    if (!container || !onTaskToggle) return;
+
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail) onTaskToggle(detail.taskIndex, detail.checked);
+    };
+    container.addEventListener('task-toggle', handler);
+    return () => container.removeEventListener('task-toggle', handler);
+  }, [onTaskToggle, html]);
 
   return (
     <div ref={scrollContainerRef} className={`preview-container ${themeClass} ${codeThemeClass}`}>

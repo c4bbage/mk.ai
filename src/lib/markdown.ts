@@ -84,6 +84,12 @@ function createRenderer(idGen: HeadingIdGen) {
     return `<blockquote class="multiquote-1">\n${this.parser.parse(tokens)}</blockquote>\n`;
   };
   r.listitem = function (item: Tokens.ListItem) {
+    // GFM Task List: render checkbox for [ ] and [x]
+    if (item.task) {
+      const checked = item.checked ? 'checked' : '';
+      const inner = this.parser.parse(item.tokens);
+      return `<li class="task-list-item"><section><input type="checkbox" ${checked} disabled />${inner}</section></li>\n`;
+    }
     return `<li><section>${this.parser.parse(item.tokens)}</section></li>\n`;
   };
   r.link = ({ href, title, text }) => {

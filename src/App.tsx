@@ -13,6 +13,7 @@ import { useAutoSave, usePeriodicBackup, getBackupsForRestore, clearBackup } fro
 import { useToast } from './components/Toast/toast-context';
 import { useMenuEvents, type MenuAction } from './hooks/useMenuEvents';
 import { useDragDrop } from './hooks/useDragDrop';
+import { useFileWatcher } from './hooks/useFileWatcher';
 import { StatusBar } from './components/StatusBar/StatusBar';
 import { TabBar } from './components/TabBar/TabBar';
 import { THEMES, CODE_THEMES, getThemeColors, FONT_PRESETS, CODE_FONT_PRESETS, getCodeThemeClass } from './themes';
@@ -182,6 +183,34 @@ function App() {
 
   const { isDragOver } = useDragDrop({ onDropFiles: handleDropFiles });
 
+  // ─── File external change detection ───
+  const handleExternalFileChange = useCallback(async (path: string) => {
+    // Skip if the user has unsaved changes (avoid data loss)
+    if (isModified) {
+      const reload = window.confirm(
+        `${getFileName(path)} 已在外部被修改。\n\n放弃当前未保存的更改并重新加载？`
+      );
+      if (!reload) return;
+    }
+    try {
+      const fs = await import('@tauri-apps/plugin-fs');
+      const fileContent = await fs.readTextFile(path);
+      revokeObjectUrls();
+      setContent(fileContent);
+      setIsModified(false);
+      showToast('文件已从外部重新加载');
+    } catch (e) {
+      console.error('[App] Failed to reload externally changed file:', e);
+      showToast('重新加载失败');
+    }
+  }, [isModified, setContent, setIsModified, showToast]);
+
+  useFileWatcher({
+    filePath,
+    enabled: isTauri() && !!filePath,
+    onExternalChange: handleExternalFileChange,
+  });
+
   const handleNewFile = useCallback(() => {
     openTab({
       content: DEFAULT_MARKDOWN,
@@ -197,6 +226,7 @@ function App() {
       setIsModified(false);
       showToast(`已保存到 ${savedPath}`);
       addRecentFile(savedPath);
+      (window as unknown as { __suppressFileWatcher?: (ms: number) => void }).__suppressFileWatcher?.(3000);
     } else if (!filePath) {
       showToast('未保存：请使用 Cmd+Shift+S 另存为');
     }
@@ -210,6 +240,7 @@ function App() {
       setIsModified(false);
       showToast(`已保存到 ${savedPath}`);
       addRecentFile(savedPath);
+      (window as unknown as { __suppressFileWatcher?: (ms: number) => void }).__suppressFileWatcher?.(3000);
     }
   }, [content, setFilePath, setFileName, setIsModified, showToast, addRecentFile]);
 
@@ -798,6 +829,24 @@ function App() {
 
   useMenuEvents(handleMenuAction);
 
+  // ─── Task list toggle: click checkbox in preview → update markdown ───
+  const handleTaskToggle = useCallback((taskIndex: number, checked: boolean) => {
+    const lines = content.split('\n');
+    let count = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(/^(\s*[-*+]\s+)\[([ xX])\]\s/);
+      if (m) {
+        if (count === taskIndex) {
+          const prefix = m[1];
+          lines[i] = `${prefix}[${checked ? 'x' : ' '}] ` + lines[i].slice(m[0].length);
+          handleContentChange(lines.join('\n'));
+          return;
+        }
+        count++;
+      }
+    }
+  }, [content, handleContentChange]);
+
   // ─── Listen for file-open events (double-click .md in Finder/Explorer) ───
   useEffect(() => {
     if (!isTauri()) return;
@@ -968,6 +1017,7 @@ function App() {
                 filePath={filePath}
                 isComposing={isComposing}
                 onScroll={handlePreviewScroll}
+                onTaskToggle={handleTaskToggle}
               />
             ) : (
               <Preview
@@ -979,6 +1029,7 @@ function App() {
                 filePath={filePath}
                 isComposing={isComposing}
                 onScroll={handlePreviewScroll}
+                onTaskToggle={handleTaskToggle}
               />
             )}
           </div>

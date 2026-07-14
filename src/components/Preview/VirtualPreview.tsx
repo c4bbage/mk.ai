@@ -4,6 +4,7 @@ import { estimateBlockHeight } from '../../lib/markdown-blocks';
 import { renderMathInElement } from '../../lib/math';
 import { renderMermaidInElement } from '../../lib/mermaid';
 import { resolveImagePathsInDom } from '../../lib/image-path';
+import { enhancePreviewDom } from '../../lib/preview-enhance';
 import { usePipelineWorker, type RenderBlock } from '../../hooks/usePipelineWorker';
 import { THEMES, getCodeThemeClass } from '../../themes';
 import 'katex/dist/katex.min.css';
@@ -21,6 +22,7 @@ interface VirtualPreviewProps {
   filePath?: string;
   isComposing?: boolean;
   onScroll?: (scrollTop: number, scrollHeight: number, clientHeight: number) => void;
+  onTaskToggle?: (taskIndex: number, checked: boolean) => void;
 }
 
 // 渲染缓存 (LRU)
@@ -78,6 +80,7 @@ const BlockRenderer = memo(function BlockRenderer({
       lastFilePathRef.current = filePath;
       setCachedRender(block, nextHtml);
       resolveImagePathsInDom(container, filePath);
+      enhancePreviewDom(container);
       if (!disableHighlight) {
         requestHighlight(block);
       }
@@ -134,6 +137,7 @@ export const VirtualPreview = forwardRef<PreviewRef, VirtualPreviewProps>(functi
   filePath,
   isComposing = false,
   onScroll,
+  onTaskToggle,
 }, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
@@ -255,6 +259,19 @@ export const VirtualPreview = forwardRef<PreviewRef, VirtualPreviewProps>(functi
       }
     },
   }));
+
+  // 监听 task-toggle 事件（来自 preview-enhance 的 checkbox 点击）
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !onTaskToggle) return;
+
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail) onTaskToggle(detail.taskIndex, detail.checked);
+    };
+    container.addEventListener('task-toggle', handler);
+    return () => container.removeEventListener('task-toggle', handler);
+  }, [onTaskToggle]);
 
   // Stable highlight callback — avoids breaking BlockRenderer memo
   const deferredHighlight = useCallback((b: RenderBlock) => {
