@@ -434,3 +434,31 @@ body {
 [data-color-mode="dark"] ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* ===== Drag & Drop Overlay ===== */
+.drag-drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.drag-drop-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 56px;
+  border: 2px dashed rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  background: rgba(30, 30, 30, 0.85);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+}
+

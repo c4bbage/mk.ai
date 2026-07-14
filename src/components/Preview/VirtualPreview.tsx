@@ -3,6 +3,7 @@ import { estimateBlockHeight } from '../../lib/markdown-blocks';
 
 import { renderMathInElement } from '../../lib/math';
 import { renderMermaidInElement } from '../../lib/mermaid';
+import { resolveImagePathsInDom } from '../../lib/image-path';
 import { usePipelineWorker, type RenderBlock } from '../../hooks/usePipelineWorker';
 import { THEMES, getCodeThemeClass } from '../../themes';
 import 'katex/dist/katex.min.css';
@@ -17,6 +18,7 @@ interface VirtualPreviewProps {
   theme: string;
   codeTheme?: string;
   fontSize?: number;
+  filePath?: string;
   isComposing?: boolean;
   onScroll?: (scrollTop: number, scrollHeight: number, clientHeight: number) => void;
 }
@@ -47,28 +49,35 @@ function setCachedRender(block: RenderBlock, html: string): void {
 // 单个块的渲染组件 — memoized to skip re-renders when block hasn't changed
 const BlockRenderer = memo(function BlockRenderer({
   block,
+  filePath,
   requestHighlight,
 }: {
   block: RenderBlock;
+  filePath?: string;
   requestHighlight: (block: RenderBlock) => void;
 }) {
   const { disableHighlight } = useRuntimeStore();
   const ref = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const currentHtmlRef = useRef<string>('');
+  const lastFilePathRef = useRef<string | undefined>(undefined);
 
   // 渲染内容
   useEffect(() => {
     const container = contentRef.current;
     const nextHtml = getCachedRender(block) ?? (block.html || '');
+    const htmlChanged = isHtmlDifferent(currentHtmlRef.current, nextHtml);
+    const filePathChanged = lastFilePathRef.current !== filePath;
 
-    if (container && isHtmlDifferent(currentHtmlRef.current, nextHtml)) {
+    if (container && (htmlChanged || filePathChanged)) {
       perfMark('preview_commit_start');
       const metrics = applyHtmlPatch(container, nextHtml);
       perfMark('preview_commit_end');
       const commitMs = perfMeasure('preview_commit', 'preview_commit_start', 'preview_commit_end');
       currentHtmlRef.current = nextHtml;
+      lastFilePathRef.current = filePath;
       setCachedRender(block, nextHtml);
+      resolveImagePathsInDom(container, filePath);
       if (!disableHighlight) {
         requestHighlight(block);
       }
@@ -76,7 +85,7 @@ const BlockRenderer = memo(function BlockRenderer({
         console.debug('[VirtualPreview] patch', { blockId: block.id, commitMs, ...metrics });
       }
     }
-  }, [block, disableHighlight, requestHighlight]);
+  }, [block, disableHighlight, requestHighlight, filePath]);
 
   // 渲染公式和图表（按需 + 异步）
   useEffect(() => {
@@ -110,7 +119,8 @@ const BlockRenderer = memo(function BlockRenderer({
 }, (prev, next) => {
   return prev.block.id === next.block.id
     && prev.block.html === next.block.html
-    && prev.block.contentHash === next.block.contentHash;
+    && prev.block.contentHash === next.block.contentHash
+    && prev.filePath === next.filePath;
 });
 
 // Overscan: render extra blocks above/below viewport for smooth scrolling
@@ -121,6 +131,7 @@ export const VirtualPreview = forwardRef<PreviewRef, VirtualPreviewProps>(functi
   theme,
   codeTheme,
   fontSize = 16,
+  filePath,
   isComposing = false,
   onScroll,
 }, ref) {
@@ -286,6 +297,7 @@ export const VirtualPreview = forwardRef<PreviewRef, VirtualPreviewProps>(functi
                 >
                   <BlockRenderer
                     block={block}
+                    filePath={filePath}
                     requestHighlight={deferredHighlight}
                   />
                 </div>

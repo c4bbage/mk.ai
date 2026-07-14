@@ -1,6 +1,7 @@
 import { useEffect, useRef, useMemo, useCallback, useState, forwardRef, useImperativeHandle, useDeferredValue, memo } from 'react';
 import { parseMarkdown } from '../../lib/markdown';
 import { sanitizeMarkdownHtml } from '../../lib/sanitize';
+import { resolveImagePathsInHtml } from '../../lib/image-path';
 import { lazyLoadKaTeX, lazyLoadMermaid, runWhenIdle } from '../../lib/performance';
 import { THEMES, getCodeThemeClass } from '../../themes';
 // import 'katex/dist/katex.min.css';
@@ -13,6 +14,7 @@ interface PreviewProps {
   theme: string;
   codeTheme?: string;
   fontSize?: number;
+  filePath?: string;
   onScroll?: (scrollTop: number, scrollHeight: number, clientHeight: number) => void;
   // IME 组合输入期间暂停预览更新
   isComposing?: boolean;
@@ -35,6 +37,7 @@ const PreviewComponent = forwardRef<PreviewRef, PreviewProps>(({
   theme,
   codeTheme,
   fontSize = 16,
+  filePath,
   onScroll,
   isComposing = false,
 }, ref) => {
@@ -84,8 +87,9 @@ const PreviewComponent = forwardRef<PreviewRef, PreviewProps>(({
   const deferredContent = useDeferredValue(debouncedContent);
   const html = useMemo(() => {
     const raw = parseMarkdown(deferredContent);
-    return sanitizeMarkdownHtml(raw);
-  }, [deferredContent]);
+    const sanitized = sanitizeMarkdownHtml(raw);
+    return resolveImagePathsInHtml(sanitized, filePath);
+  }, [deferredContent, filePath]);
   
   // 获取主题类名
   const themeClass = useMemo(() => {
@@ -187,6 +191,7 @@ export const Preview = memo(PreviewComponent, (prevProps, nextProps) => {
     prevProps.theme === nextProps.theme &&
     prevProps.codeTheme === nextProps.codeTheme &&
     prevProps.fontSize === nextProps.fontSize &&
+    prevProps.filePath === nextProps.filePath &&
     prevProps.isComposing === nextProps.isComposing
   );
 });

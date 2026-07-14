@@ -6,12 +6,13 @@ import { Preview, type PreviewRef, VirtualPreview } from './components/Preview';
 import { Outline } from './components/Outline';
 import { FileTree } from './components/FileTree';
 import { openFile, saveFile, saveFileAs, getFileName, isTauri } from './lib/file';
-import { revokeObjectUrls, extractAndSaveImages } from './lib/image';
+import { revokeObjectUrls, extractAndSaveImages, processImage } from './lib/image';
 import { exportHTML, exportPDF, copyForWeChat, copyHTML, copyMarkdown, getMarkdownBodyHtml, copyImageToClipboard } from './lib/export';
 import { DEFAULT_MARKDOWN } from './lib/markdown';
 import { useAutoSave, usePeriodicBackup, getBackupsForRestore, clearBackup } from './hooks/useAutoSave';
 import { useToast } from './components/Toast/toast-context';
 import { useMenuEvents, type MenuAction } from './hooks/useMenuEvents';
+import { useDragDrop } from './hooks/useDragDrop';
 import { StatusBar } from './components/StatusBar/StatusBar';
 import { TabBar } from './components/TabBar/TabBar';
 import { THEMES, CODE_THEMES, getThemeColors, FONT_PRESETS, CODE_FONT_PRESETS, getCodeThemeClass } from './themes';
@@ -112,6 +113,74 @@ function App() {
       showToast('无法打开文件，可能已被移动或删除');
     }
   }, [openTab, addRecentFile, showToast]);
+
+  // ─── Drag-and-drop file open ───
+  const handleDropFiles = useCallback(async (files: { path: string; isImage: boolean }[]) => {
+    if (!isTauri()) return;
+    const mdFiles = files.filter(f => !f.isImage);
+    const imageFiles = files.filter(f => f.isImage);
+
+    // Open markdown files as tabs
+    if (mdFiles.length > 0) {
+      try {
+        const fs = await import('@tauri-apps/plugin-fs');
+        for (const f of mdFiles) {
+          try {
+            const fileContent = await fs.readTextFile(f.path);
+            revokeObjectUrls();
+            openTab({
+              content: fileContent,
+              fileName: getFileName(f.path),
+              filePath: f.path,
+            });
+            addRecentFile(f.path);
+          } catch (e) {
+            console.error('[App] Failed to open dropped file:', f.path, e);
+          }
+        }
+        showToast(`已打开 ${mdFiles.length} 个文件`);
+      } catch (e) {
+        console.error('[App] Drag-drop error:', e);
+      }
+    }
+
+    // Insert images into editor
+    if (imageFiles.length > 0) {
+      // If editor is hidden, toggle it on first
+      const needShowEditor = !showEditor;
+      if (needShowEditor) {
+        toggleEditor();
+        await new Promise(r => requestAnimationFrame(() => r(null)));
+      }
+      try {
+        const fs = await import('@tauri-apps/plugin-fs');
+        for (const img of imageFiles) {
+          try {
+            const bytes = await fs.readFile(img.path);
+            const fileName = getFileName(img.path);
+            const mime = fileName.match(/\.(png)$/i) ? 'image/png'
+              : fileName.match(/\.(jpe?g)$/i) ? 'image/jpeg'
+              : fileName.match(/\.(gif)$/i) ? 'image/gif'
+              : fileName.match(/\.(webp)$/i) ? 'image/webp'
+              : fileName.match(/\.(svg)$/i) ? 'image/svg+xml'
+              : 'image/png';
+            const file = new File([bytes], fileName, { type: mime });
+            const imageMarkdown = await processImage(file, imageStorage, filePath);
+            editorRef.current?.insertAtCursor(imageMarkdown);
+          } catch (e) {
+            console.error('[App] Failed to insert dropped image:', img.path, e);
+          }
+        }
+        if (imageFiles.length > 0) {
+          showToast(`已插入 ${imageFiles.length} 张图片`);
+        }
+      } catch (e) {
+        console.error('[App] Image drag-drop error:', e);
+      }
+    }
+  }, [openTab, addRecentFile, showToast, imageStorage, filePath, showEditor, toggleEditor]);
+
+  const { isDragOver } = useDragDrop({ onDropFiles: handleDropFiles });
 
   const handleNewFile = useCallback(() => {
     openTab({
@@ -729,6 +798,30 @@ function App() {
 
   useMenuEvents(handleMenuAction);
 
+  // ─── Listen for file-open events (double-click .md in Finder/Explorer) ───
+  useEffect(() => {
+    if (!isTauri()) return;
+    let cancelled = false;
+    let unlisten: (() => void) | null = null;
+
+    (async () => {
+      const { listen } = await import('@tauri-apps/api/event');
+      if (cancelled) return;
+      unlisten = await listen<string>('open-file', (event) => {
+        handleOpenPath(event.payload);
+      });
+      if (cancelled && unlisten) {
+        unlisten();
+        unlisten = null;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (unlisten) unlisten();
+    };
+  }, [handleOpenPath]);
+
   // ─── Web-mode keyboard shortcuts (fallback when no native menu) ───
   // In Tauri mode, native menu accelerators handle these — skip to avoid double-fire
   useEffect(() => {
@@ -809,6 +902,18 @@ function App() {
 
   return (
     <div className="app app-typora" style={outlineVars as unknown as CSSProperties}>
+      {isDragOver && (
+        <div className="drag-drop-overlay">
+          <div className="drag-drop-card">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <span>拖放 Markdown 或图片以打开</span>
+          </div>
+        </div>
+      )}
       <TabBar />
       <div className="app-content">
         {showFileTree && (
@@ -860,6 +965,7 @@ function App() {
                 theme={theme}
                 codeTheme={codeTheme}
                 fontSize={fontSize}
+                filePath={filePath}
                 isComposing={isComposing}
                 onScroll={handlePreviewScroll}
               />
@@ -870,6 +976,7 @@ function App() {
                 theme={theme}
                 codeTheme={codeTheme}
                 fontSize={fontSize}
+                filePath={filePath}
                 isComposing={isComposing}
                 onScroll={handlePreviewScroll}
               />

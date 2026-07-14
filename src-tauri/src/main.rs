@@ -343,13 +343,24 @@ fn update_menu_state(
 }
 
 fn main() {
-    tauri::Builder::default()
+    // Check for file path in command-line args (Windows/Linux file association)
+    let args: Vec<String> = std::env::args().collect();
+    let startup_file: Option<String> = args.get(1).and_then(|p| {
+        let lower = p.to_lowercase();
+        if lower.ends_with(".md") || lower.ends_with(".markdown") || lower.ends_with(".txt") {
+            Some(p.clone())
+        } else {
+            None
+        }
+    });
+
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .invoke_handler(tauri::generate_handler![update_menu_state])
-        .setup(|app| {
+        .setup(move |app| {
             let initial_state = MenuState::default();
             let (menu, check_items) = build_menu(app.handle(), &initial_state)?;
             app.set_menu(menu)?;
@@ -377,8 +388,31 @@ fn main() {
                 let _ = window.set_focus();
             }
 
+            // Emit startup file (from command-line args) after frontend loads
+            if let Some(ref path) = startup_file {
+                let handle = app.handle().clone();
+                let path = path.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(800));
+                    let _ = handle.emit("open-file", &path);
+                });
+            }
+
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(|app_handle, event| {
+        #[cfg(target_os = "macos")]
+        if let tauri::RunEvent::Opened { urls } = event {
+            for url in urls {
+                if let Ok(path) = url.to_file_path() {
+                    let path_str = path.to_string_lossy().to_string();
+                    let _ = app_handle.emit("open-file", &path_str);
+                }
+            }
+        }
+        let _ = event; // silence unused warnings on non-macOS
+    });
 }
